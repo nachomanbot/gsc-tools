@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>GSC Intelligence | LP SEO Suite</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,6 +67,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1
 .load-btn{padding:10px 20px;background:linear-gradient(135deg,var(--gold),#d4a24a);color:#0a0906;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
 .load-btn:hover{filter:brightness(1.1)}
 .load-btn:disabled{opacity:.4;cursor:not-allowed}
+.reset-btn{padding:10px 16px;background:transparent;border:1px solid var(--bad);border-radius:8px;color:var(--bad);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+.reset-btn:hover{background:var(--bad-bg);border-color:var(--bad)}
 
 /* TABS */
 .main-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px}
@@ -242,11 +247,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1
         <div id="propDropdown" class="prop-dropdown hidden"></div>
       </div>
       <div class="date-range-bar">
-        <input type="date" id="dateFrom">
+        <input type="date" id="dateFrom" autocomplete="off">
         <span style="color:var(--text3);font-size:12px">to</span>
-        <input type="date" id="dateTo">
+        <input type="date" id="dateTo" autocomplete="off">
       </div>
       <button class="load-btn" id="loadBtn" onclick="loadData()">Load Data</button>
+      <button class="reset-btn" onclick="fullReset()" title="Clear all data and start fresh">&#8635; Reset</button>
     </div>
 
     <div id="dataLoading" class="loading-overlay hidden">
@@ -273,7 +279,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1
           <div class="card-title">Refresh Log</div>
           <div class="card-desc">Log every content update: when, which page, and what changed.</div>
           <div id="refreshDates" class="refresh-dates-list">
-            <div class="refresh-date-item"><div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search pages..." oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite, Added FAQ"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div></div>
+            <div class="refresh-date-item"><div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input" autocomplete="off"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search pages..." autocomplete="off" oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite, Added FAQ" autocomplete="off"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div></div>
           </div>
           <button class="add-date-btn" onclick="addRow()">+ Add another entry</button>
           <div style="display:flex;gap:12px;margin-top:20px">
@@ -477,6 +483,54 @@ document.addEventListener('click',function(e){
 
 function onPropChange(){selectedSite=document.getElementById('propSearch').value}
 
+function fullReset(){
+  console.log('[GSCIntel] FULL RESET triggered');
+
+  // Nuclear reset of all data
+  siteTimeline=[];sitePages=[];siteQueries=[];pageUrls=[];pageClickMap={};
+  ssSections={};ssSorted=[];bubbles=[];compResults=[];refreshDates=[];
+  try{if(chartInst){chartInst.destroy()}}catch(e){}
+  chartInst=null;
+
+  // Hide everything
+  try{document.getElementById('refreshResults').classList.add('hidden')}catch(e){}
+  try{document.getElementById('detailPanel').classList.add('hidden')}catch(e){}
+  try{document.getElementById('detailKw').classList.add('hidden')}catch(e){}
+  try{document.getElementById('dataStatus').classList.add('hidden')}catch(e){}
+  try{document.getElementById('tabsSection').classList.add('hidden')}catch(e){}
+
+  // Clear all rendered content
+  try{document.getElementById('compCards').innerHTML=''}catch(e){}
+  try{document.getElementById('chartLegend').innerHTML=''}catch(e){}
+  try{document.getElementById('detailPages').innerHTML=''}catch(e){}
+  try{document.getElementById('kwContainer').innerHTML=''}catch(e){}
+  try{document.getElementById('bubbleStats').innerHTML=''}catch(e){}
+
+  // Clear canvas
+  try{var bc=document.getElementById('bubbleCanvas');if(bc){bc.getContext('2d').clearRect(0,0,bc.width,bc.height)}}catch(e){}
+
+  // NUCLEAR: completely replace the refresh log container
+  try{
+    var container=document.getElementById('refreshDates');
+    if(container){
+      container.innerHTML='';
+      var fresh=document.createElement('div');
+      fresh.className='refresh-date-item';
+      fresh.innerHTML='<div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input" autocomplete="off"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search pages..." autocomplete="off" oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite, Added FAQ" autocomplete="off"></div><button class="remove-btn" onclick="removeRow(this)">\u00d7</button></div>';
+      container.appendChild(fresh);
+    }
+  }catch(e){console.error('[GSCIntel] Refresh log nuclear reset error:',e)}
+
+  // Clear property search
+  try{document.getElementById('propSearch').value=''}catch(e){}
+
+  // Reset metric selectors
+  try{document.getElementById('primaryMetric').selectedIndex=0}catch(e){}
+  try{document.getElementById('windowDays').selectedIndex=1}catch(e){}
+
+  console.log('[GSCIntel] FULL RESET complete');
+}
+
 function resetState(){
   console.log('[GSCIntel] Resetting state...');
   
@@ -538,10 +592,22 @@ async function loadData(){
   selectedSite=document.getElementById('propSearch').value.trim();
   if(!selectedSite||!accessToken){showStatus('error','Please select a property and sign in.');return}
 
+  // Save user selections before reset
+  var savedFrom=document.getElementById('dateFrom').value;
+  var savedTo=document.getElementById('dateTo').value;
+
   // Reset everything from previous client
-  resetState();
-  var from=document.getElementById('dateFrom').value;
-  var to=document.getElementById('dateTo').value;
+  fullReset();
+
+  // Restore the property and dates
+  document.getElementById('propSearch').value=selectedSite;
+  var from=savedFrom;var to=savedTo;
+  if(!from||!to){
+    var now=new Date();var d3=new Date(now);d3.setMonth(d3.getMonth()-3);
+    from=d3.toISOString().slice(0,10);to=now.toISOString().slice(0,10);
+  }
+  document.getElementById('dateFrom').value=from;
+  document.getElementById('dateTo').value=to;
   if(!from||!to){showStatus('error','Please select a date range.');return}
   var base='https://www.googleapis.com/webmasters/v3/sites/'+encodeURIComponent(selectedSite)+'/searchAnalytics/query';
 
@@ -638,7 +704,7 @@ async function fetchSectionQueries(sectionPath){
 /* ════════════════════════════════════════
    CONTENT REFRESH
 ════════════════════════════════════════ */
-function addRow(){var l=document.getElementById('refreshDates');var d=document.createElement('div');d.className='refresh-date-item';d.innerHTML='<div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search..." oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div>';l.appendChild(d)}
+function addRow(){var l=document.getElementById('refreshDates');var d=document.createElement('div');d.className='refresh-date-item';d.innerHTML='<div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input" autocomplete="off"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search..." autocomplete="off" oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite" autocomplete="off"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div>';l.appendChild(d)}
 function removeRow(btn){var l=document.getElementById('refreshDates');var item=btn.closest('.refresh-date-item');if(l.children.length>1)item.remove();else{item.querySelector('.date-input').value='';item.querySelector('.page-input').value='';item.querySelector('.page-input').classList.remove('has-value');item.querySelector('.note-input').value=''}}
 function getRefreshEntries(){var items=document.querySelectorAll('.refresh-date-item');var d=[];for(var i=0;i<items.length;i++){var dt=items[i].querySelector('.date-input').value;var pg=items[i].querySelector('.page-input').value;var n=items[i].querySelector('.note-input').value;if(dt)d.push({date:dt,page:pg||'',note:n||'Content refresh'})}return d}
 
