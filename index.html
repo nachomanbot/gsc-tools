@@ -1,1497 +1,792 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SEO Migration Pipeline Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<title>GSC Intelligence | LP SEO Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#111115;--surface:#1a1a21;--surface-2:#22222b;--surface-3:#2a2a35;
-  --border:#2f2f3a;--border-2:#3a3a48;
-  --text:#ede9e3;--text-muted:#9a958d;--text-dim:#5e5a54;
-  --gold:#c4a265;--gold-dim:rgba(196,162,101,.12);--gold-light:#d4b87a;
-  --green:#6fcf97;--green-dim:rgba(111,207,151,.1);
-  --red:#eb5757;--red-dim:rgba(235,87,87,.1);
-  --orange:#f2994a;--orange-dim:rgba(242,153,74,.1);
-  --blue:#6c8aff;--blue-dim:rgba(108,138,255,.1);
-  --purple:#bb6bd9;--purple-dim:rgba(187,107,217,.1);
-  --cyan:#56ccf2;--cyan-dim:rgba(86,204,242,.1);
-  --yellow:#f2c94c;--yellow-dim:rgba(242,201,76,.1);
-}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+:root{--bg:#0a0906;--bg2:#111009;--surface:#161410;--surface2:#1e1b16;--border:#2a2620;--border2:#3a352c;--gold:#eeb75d;--gold-dim:rgba(238,183,93,.12);--gold-bd:rgba(238,183,93,.3);--gold-hover:#f5c96e;--cream:#F1EFEB;--text:#e8e4dc;--text2:#9a9080;--text3:#4a4538;--good:#7ecfa0;--good-bg:rgba(126,207,160,.1);--bad:#d4756a;--bad-bg:rgba(212,117,106,.1);--blue:#6ba3d4;--blue-bg:rgba(107,163,212,.15);--purple:#b48ad4;--grid:rgba(238,183,93,.025);--shadow:0 24px 48px rgba(0,0,0,.5)}
+[data-theme="light"]{--bg:#F1EFEB;--bg2:#E8E4DC;--surface:#ffffff;--surface2:#f6f4f0;--border:#ddd9d0;--border2:#c8c2b5;--gold:#b8860b;--gold-dim:rgba(184,134,11,.08);--gold-bd:rgba(184,134,11,.25);--gold-hover:#9a7009;--cream:#0a0906;--text:#1a1710;--text2:#6a6055;--text3:#a09888;--good:#2d7a50;--good-bg:rgba(45,122,80,.08);--bad:#a0352a;--bad-bg:rgba(160,53,42,.08);--blue:#2d6a9f;--blue-bg:rgba(45,106,159,.08);--purple:#7a4a9f;--grid:rgba(0,0,0,.03);--shadow:0 24px 48px rgba(0,0,0,.1)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;transition:background .35s,color .35s;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);z-index:999}
+.wrap{max-width:1000px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+header{padding:18px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;backdrop-filter:blur(24px) saturate(1.4);background:rgba(10,9,6,.88)}
+[data-theme="light"] header{background:rgba(241,239,235,.92)}
+.header-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo-icon{width:36px;height:36px;border:1px solid var(--gold-bd);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:'Cormorant',serif;font-size:20px;font-weight:700}
+.logo-text{font-family:'Cormorant',serif;font-size:18px;font-weight:600;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--text2);font-weight:400;letter-spacing:.06em;text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:12px}
+.theme-toggle,.auth-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;transition:all .2s}
+.theme-toggle:hover,.auth-btn:hover{border-color:var(--gold-bd);color:var(--gold)}
+.auth-btn.connected{border-color:var(--good);color:var(--good);background:var(--good-bg)}
+.user-badge{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.user-badge img{width:22px;height:22px;border-radius:50%;border:1px solid var(--border)}
+main{padding:40px 0 80px}
 
-/* ── Layout ── */
-.app{max-width:1800px;margin:0 auto;padding:20px 28px}
-.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;border-bottom:1px solid var(--gold);padding-bottom:16px}
-.header-left h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:var(--gold);letter-spacing:.5px}
-.header-left p{font-size:12px;color:var(--text-dim);margin-top:2px}
-.header-right{display:flex;gap:8px;align-items:center}
+/* AUTH SCREEN */
+.auth-screen{text-align:center;padding:80px 20px}
+.auth-screen h1{font-family:'Cormorant',serif;font-size:36px;font-weight:600;margin-bottom:12px}
+.auth-screen p{font-size:15px;color:var(--text2);margin-bottom:40px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6}
+.google-btn{display:inline-flex;align-items:center;gap:12px;padding:14px 32px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.google-btn:hover{border-color:var(--gold);transform:translateY(-1px);box-shadow:var(--shadow)}
+.google-btn svg{width:20px;height:20px}
+.auth-features{display:flex;gap:24px;justify-content:center;margin-top:48px;flex-wrap:wrap}
+.auth-feat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:200px;text-align:left}
+.auth-feat-icon{font-size:24px;margin-bottom:8px}
+.auth-feat-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.auth-feat-desc{font-size:12px;color:var(--text2);line-height:1.5}
 
-/* ── Controls ── */
-.controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
-.cg{display:flex;flex-direction:column;gap:4px}
-.cg label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)}
-.file-drop{position:relative;min-width:220px;padding:9px 14px;background:var(--surface-2);border:1px dashed var(--border-2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:7px;transition:all .2s}
-.file-drop:hover{border-color:var(--gold);color:var(--text)}
-.file-drop.loaded{border-color:var(--green);border-style:solid;color:var(--green)}
-.file-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-input[type=date]{padding:7px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none}
-input[type=date]:focus{border-color:var(--gold)}
-input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6)}
-.btn{padding:7px 18px;background:var(--gold);color:#111;border:none;border-radius:5px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn:hover{background:var(--gold-light)}
-.btn:disabled{opacity:.3;cursor:not-allowed}
-.btn-sm{padding:4px 10px;font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
-.btn-sm:hover{border-color:var(--gold);color:var(--gold)}
-.btn-sm.copied{border-color:var(--green);color:var(--green)}
-.btn-gear{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:7px 10px;border-radius:5px;cursor:pointer;font-size:13px;transition:all .15s}
-.btn-gear:hover{border-color:var(--gold);color:var(--gold)}
+/* PROPERTY SELECTOR */
+.prop-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.prop-bar label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.prop-select{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;color:var(--text);background:var(--surface2);outline:none;cursor:pointer;min-width:200px}
+.prop-select:focus{border-color:var(--gold)}
+.date-range-bar{display:flex;align-items:center;gap:8px}
+.date-range-bar input{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none}
+.date-range-bar input:focus{border-color:var(--gold)}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1) saturate(3) hue-rotate(15deg);cursor:pointer;opacity:.7}
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator{filter:none;opacity:.5}
+.load-btn{padding:10px 20px;background:linear-gradient(135deg,var(--gold),#d4a24a);color:#0a0906;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+.load-btn:hover{filter:brightness(1.1)}
+.load-btn:disabled{opacity:.4;cursor:not-allowed}
 
-/* ── Tabs ── */
-.tabs{display:flex;gap:1px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:0}
-.tab{padding:10px 16px;font-size:12px;font-weight:500;color:var(--text-dim);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
-.tab:hover{color:var(--text-muted)}
-.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-.tc{display:none}.tc.active{display:block}
+/* TABS */
+.main-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px}
+.main-tab{flex:1;padding:12px 16px;border:none;border-radius:8px;background:transparent;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.main-tab:hover{color:var(--text)}
+.main-tab.active{background:var(--gold);color:#0a0906;font-weight:600}
+.tab-pane{display:none;animation:fadeIn .3s ease}
+.tab-pane.active{display:block}
 
-/* ── KPI Cards (SF-style) ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:18px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;text-align:center;transition:border-color .2s}
-.kpi:hover{border-color:var(--border-2)}
-.kpi .kpi-val{font-family:'Playfair Display',serif;font-size:36px;font-weight:600;line-height:1.1;margin-bottom:4px}
-.kpi .kpi-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);line-height:1.3}
-.kpi.accent .kpi-val{color:var(--gold)}
-.kpi.green .kpi-val{color:var(--green)}
-.kpi.red .kpi-val{color:var(--red)}
-.kpi.orange .kpi-val{color:var(--orange)}
-.kpi.blue .kpi-val{color:var(--blue)}
-.kpi.cyan .kpi-val{color:var(--cyan)}
+/* SHARED */
+.section-title{font-family:'Cormorant',serif;font-size:24px;font-weight:600;margin-bottom:8px}
+.section-desc{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6;max-width:600px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:20px}
+.card-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.card-desc{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.form-input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none}
+.form-input:focus{border-color:var(--gold)}
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 24px;border:none;border-radius:10px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;background:linear-gradient(135deg,var(--gold),#d4a24a);color:#0a0906;transition:all .2s}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:13px;padding:10px 16px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-secondary:hover{border-color:var(--gold-bd);color:var(--gold)}
+.status-bar{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px}
+.status-bar.success{background:var(--good-bg);color:var(--good);border:1px solid rgba(126,207,160,.2)}
+.status-bar.error{background:var(--bad-bg);color:var(--bad);border:1px solid rgba(212,117,106,.2)}
+.status-bar.info{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(107,163,212,.2)}
 
-/* ── Pipeline Cards (big numbers like SF dashboard) ── */
-.pipeline-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
-.pipe-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;text-align:center}
-.pipe-card .pipe-val{font-family:'Playfair Display',serif;font-size:44px;font-weight:700;line-height:1}
-.pipe-card .pipe-label{font-size:11px;color:var(--text-muted);margin-top:6px}
-.pipe-card.green .pipe-val{color:var(--green)}
-.pipe-card.red .pipe-val{color:var(--red)}
-.pipe-card.gold .pipe-val{color:var(--gold)}
-.pipe-card.cyan .pipe-val{color:var(--cyan)}
-.pipe-card.orange .pipe-val{color:var(--orange)}
-.pipe-card.blue .pipe-val{color:var(--blue)}
-.pipe-card.purple .pipe-val{color:var(--purple)}
+/* LOADING SPINNER */
+.loading-overlay{text-align:center;padding:40px}
+.loading-dots{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.loading-dots div{width:10px;height:10px;border-radius:50%;background:var(--gold);animation:pulse 1.4s ease-in-out infinite}
+.loading-dots div:nth-child(2){animation-delay:.2s}
+.loading-dots div:nth-child(3){animation-delay:.4s}
+.loading-text{font-size:14px;color:var(--text2)}
+.loading-sub{font-size:12px;color:var(--text3);margin-top:4px}
 
-/* ── Tables ── */
-.ts{margin-bottom:18px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.th{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
-.tt{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--gold)}
-.tt .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.tt .count{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:400;color:var(--text-dim);margin-left:4px}
-.tw{overflow-x:auto;max-height:550px;overflow-y:auto}
-table{width:100%;border-collapse:collapse;font-size:11px}
-thead th{padding:7px 10px;text-align:center;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);background:var(--surface-2);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:1}
-thead th:first-child{text-align:left;padding-left:14px;min-width:200px}
-td{padding:6px 10px;text-align:center;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);white-space:nowrap}
-td:first-child{text-align:left;padding-left:14px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text)}
-tr:hover td{background:rgba(196,162,101,.04)}
-tr.total-row td{font-weight:700;color:var(--text);background:var(--surface-2);border-top:2px solid var(--border)}
-td.hv{color:var(--text)}
-.sla-ok{color:var(--green);background:var(--green-dim);border-radius:3px}
-.sla-breach{color:var(--red);background:var(--red-dim);border-radius:3px}
-.sla-risk{color:var(--orange);background:var(--orange-dim);border-radius:3px}
-.sla-track{color:var(--cyan);background:var(--cyan-dim);border-radius:3px}
-.pri-esc{color:var(--red);font-weight:600}
-.pri-urgent{color:var(--orange)}
-.pri-high{color:var(--yellow)}
-.pri-med{color:var(--cyan)}
-.pri-low{color:var(--green)}
-.pri-tag{padding:2px 6px;border-radius:3px;font-size:9px;font-weight:600}
+/* REFRESH LOG */
+.refresh-dates-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.refresh-date-item{padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+.rdi-row{display:flex;gap:10px;align-items:flex-end}
+.rdi-field{display:flex;flex-direction:column}
+.rdi-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.rdi-date{min-width:150px}
+.rdi-page{flex:2;position:relative}
+.rdi-note{flex:2}
+.rdi-page-wrap{position:relative}
+.rdi-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:50;box-shadow:var(--shadow)}
+.rdi-dropdown .rdi-opt{padding:8px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+.rdi-dropdown .rdi-opt:hover{background:var(--gold-dim);color:var(--text)}
+.rdi-dropdown .rdi-opt .rdi-clicks{font-size:10px;color:var(--text3)}
+.rdi-dropdown .rdi-no{padding:8px 12px;font-size:12px;color:var(--text3);font-style:italic;text-align:center}
+.refresh-date-item input{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg2);outline:none;width:100%}
+.refresh-date-item input:focus{border-color:var(--gold)}
+.refresh-date-item .page-input{font-family:'DM Mono',monospace;font-size:12px}
+.refresh-date-item .page-input.has-value{border-color:var(--gold-bd);background:var(--gold-dim);color:var(--gold)}
+.refresh-date-item .remove-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--bad);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-end;margin-bottom:2px}
+.add-date-btn{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--gold-dim);border:1px dashed var(--gold-bd);border-radius:8px;color:var(--gold);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%;justify-content:center;margin-top:10px}
 
-/* ── Section headers ── */
-.section-hdr{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--gold);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+/* CHART */
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px}
+.chart-container{position:relative;height:380px;width:100%}
+.chart-legend{display:flex;gap:20px;padding:12px 0 0;flex-wrap:wrap}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.chart-legend-dot{width:10px;height:10px;border-radius:50%}
 
-/* ── Empty / Toast ── */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;color:var(--text-dim);gap:10px}
-.empty p{font-size:13px;font-family:'Playfair Display',serif}
-.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;background:var(--gold);color:#111;border-radius:6px;font-size:11px;font-weight:600;transform:translateY(60px);opacity:0;transition:all .3s;z-index:2000}
-.toast.show{transform:translateY(0);opacity:1}
+/* COMPARISON CARDS */
+.comparison-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:24px}
+.comp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s}
+.comp-card:hover{border-color:var(--gold-bd);transform:translateY(-2px)}
+.comp-card.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.comp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold)}
+.comp-card-date{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);margin-bottom:2px}
+.comp-card-page{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-card-note{font-size:12px;color:var(--text3);margin-bottom:16px;font-style:italic}
+.comp-card-drill{font-size:11px;color:var(--gold);opacity:0;transition:opacity .2s;margin-top:8px;text-align:right}
+.comp-card:hover .comp-card-drill{opacity:1}
+.comp-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.comp-row:last-child{border-bottom:none}
+.comp-metric{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.03em}
+.comp-values{display:flex;gap:12px;align-items:center;font-size:13px}
+.comp-before{color:var(--text3)}
+.comp-after{font-weight:600;color:var(--text)}
+.comp-change{font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px}
+.comp-change.up{color:var(--good);background:var(--good-bg)}
+.comp-change.down{color:var(--bad);background:var(--bad-bg)}
+.comp-change.neutral{color:var(--text2);background:var(--surface2)}
+.comp-change.pos-up{color:var(--good);background:var(--good-bg)}
+.comp-change.pos-down{color:var(--bad);background:var(--bad-bg)}
 
-/* ── Settings Modal ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal-overlay.show{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;width:600px;max-width:90vw;max-height:80vh;overflow-y:auto}
-.modal h2{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;color:var(--gold)}
-.modal h3{font-size:11px;font-weight:600;color:var(--text-muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.6px}
-.modal-row{display:flex;gap:6px;margin-bottom:5px;align-items:center}
-.modal-row input{flex:1;padding:5px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:11px;outline:none}
-.modal-row input:focus{border-color:var(--gold)}
-.modal-row .del{background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 4px}
-.add-link{color:var(--gold);font-size:11px;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif}
-.add-link:hover{text-decoration:underline}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
-.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:900px){.row-2{grid-template-columns:1fr}.pipeline-grid{grid-template-columns:repeat(2,1fr)}}
+/* BUBBLE MAP */
+.bubble-map-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px}
+.bubble-map-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.bubble-map-title h3{font-family:'Cormorant',serif;font-size:20px;font-weight:600}
+.bubble-map-stats{font-size:13px;color:var(--text2)}
+.bubble-map-stats span{color:var(--gold);font-weight:600}
+.bubble-canvas{width:100%;height:500px;cursor:pointer;border-radius:8px}
 
-/* ── Phase 2: Team Performance ── */
-.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:18px}
-.team-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;cursor:pointer;transition:all .2s}
-.team-card:hover{border-color:var(--gold);transform:translateY(-1px)}
-.team-card.expanded{border-color:var(--gold-dim);grid-column:1/-1}
-.team-card .tc-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.team-card .tc-name .chevron{font-size:10px;color:var(--text-dim);transition:transform .2s}
-.team-card.expanded .tc-name .chevron{transform:rotate(90deg)}
-.tc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
-.tc-stat{text-align:center;padding:8px 4px;background:var(--surface-2);border-radius:5px}
-.tc-stat .val{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;line-height:1.1}
-.tc-stat .lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-top:2px}
-.tc-detail{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
-.team-card.expanded .tc-detail{display:block}
-.tc-detail table{font-size:10px}
-.tc-sla-bar{display:flex;gap:2px;margin-top:6px;height:4px;border-radius:2px;overflow:hidden}
-.tc-sla-bar span{flex:1;border-radius:1px}
+/* DETAIL */
+.detail-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.detail-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.detail-header h3{font-family:'Cormorant',serif;font-size:18px;font-weight:600;color:var(--gold)}
+.detail-header .stats{font-size:12px;color:var(--text2)}
+.detail-header .stats span{color:var(--text);font-weight:600}
+.page-list{max-height:320px;overflow-y:auto}
+.page-row{display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;transition:background .15s}
+.page-row:hover{background:var(--gold-dim)}
+.page-row.active{background:var(--gold-dim);border-left:3px solid var(--gold)}
+.page-url{flex:1;font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page-metric{min-width:65px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--text)}
+.page-metric-label{min-width:65px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
 
-/* ── Phase 2: Daily Movement ── */
-.movement-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
-@media(max-width:900px){.movement-grid{grid-template-columns:1fr}}
-.mv-chart{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}
-.mv-chart .mv-title{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.mv-chart .mv-title .dot{width:8px;height:8px;border-radius:50%}
-.mv-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.mv-bar-row .mv-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);min-width:52px}
-.mv-bar-row .mv-bar{height:22px;border-radius:3px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:600;color:#111;min-width:24px;transition:width .4s ease}
-.mv-bar-row .mv-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);min-width:18px;text-align:right}
+/* KW CLUSTERS */
+.kw-section{margin-top:20px}
+.kw-section-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em}
+.kw-cluster{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.kw-cluster-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer}
+.kw-cluster-header:hover{background:var(--surface2)}
+.kw-cluster-name{font-weight:600;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
+.kw-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--gold-dim);color:var(--gold);font-weight:500}
+.kw-cluster-stats{display:flex;gap:14px;font-size:12px;color:var(--text2)}
+.kw-cluster-stats span{color:var(--text);font-weight:600}
+.kw-cluster-body{display:none;border-top:1px solid var(--border)}
+.kw-cluster-body.open{display:block}
+.kw-row{display:flex;align-items:center;padding:7px 16px;border-bottom:1px solid var(--border);font-size:12px;gap:10px}
+.kw-row:last-child{border-bottom:none}
+.kw-name{flex:1;font-family:'DM Mono',monospace;color:var(--text2);font-size:11px}
+.kw-val{min-width:50px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--text)}
 
-/* ── Phase 2: Service Tracker filters ── */
-.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.filter-row select{padding:6px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:11px;outline:none;cursor:pointer}
-.filter-row select:focus{border-color:var(--gold)}
-.filter-row input[type=text]{padding:6px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:11px;outline:none;min-width:200px}
-.filter-row input[type=text]:focus{border-color:var(--gold)}
-.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:600;letter-spacing:.3px}
-.badge-green{background:var(--green-dim);color:var(--green)}
-.badge-red{background:var(--red-dim);color:var(--red)}
-.badge-orange{background:var(--orange-dim);color:var(--orange)}
-.badge-blue{background:var(--blue-dim);color:var(--blue)}
-.badge-purple{background:var(--purple-dim);color:var(--purple)}
-.badge-cyan{background:var(--cyan-dim);color:var(--cyan)}
-.badge-gold{background:var(--gold-dim);color:var(--gold)}
-
-/* ── Phase 2: Website Launched escalation ── */
-.esc-card{background:var(--surface);border:1px solid var(--red);border-radius:8px;padding:18px;margin-bottom:10px;border-left:3px solid var(--red)}
-.esc-card .esc-svc{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
-.esc-card .esc-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text-muted)}
-.esc-card .esc-meta span{display:flex;align-items:center;gap:4px}
-.esc-card .esc-tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600}
-.esc-urgency-critical{background:var(--red-dim);color:var(--red);border:1px solid rgba(235,87,87,.3)}
-.esc-urgency-high{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(242,153,74,.3)}
-.esc-urgency-medium{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(242,201,76,.3)}
-
-/* ── Auth Gate ── */
-.auth-gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:5000}
-.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px 36px;width:360px;max-width:90vw;text-align:center}
-.auth-box h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:6px}
-.auth-box p{font-size:11px;color:var(--text-dim);margin-bottom:24px}
-.auth-box input[type=password]{width:100%;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;text-align:center;letter-spacing:1px}
-.auth-box input[type=password]:focus{border-color:var(--gold)}
-.auth-box input[type=password].error{border-color:var(--red);animation:shake .4s}
-@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-.auth-box .auth-btn{width:100%;padding:10px;margin-top:12px;background:var(--gold);color:#111;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
-.auth-box .auth-btn:hover{background:var(--gold-light)}
-.auth-box .auth-error{font-size:10px;color:var(--red);margin-top:10px;min-height:14px}
-.auth-box .auth-hint{font-size:9px;color:var(--text-dim);margin-top:16px;line-height:1.4}
-.controls.hidden{display:none}
-.role-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;transition:all .15s}
-.role-badge.admin{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(196,162,101,.3)}
-.role-badge.viewer{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(108,138,255,.3)}
-.role-badge:hover{opacity:.8}
-.viewer-banner{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
-.viewer-banner .vb-info{font-size:11px;color:var(--text-muted)}
-.viewer-banner .vb-info strong{color:var(--text)}
-.viewer-banner .vb-live{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green)}
-.viewer-banner .vb-live .pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.fb-status{font-size:10px;color:var(--text-dim);margin-left:auto;display:flex;align-items:center;gap:6px}
-.fb-status.connected{color:var(--green)}
-.fb-status.error{color:var(--red)}
-.loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3000;gap:12px}
-.loading-overlay p{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold)}
-.loading-spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none !important}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,80%,100%{transform:scale(0);opacity:.5}40%{transform:scale(1);opacity:1}}
+@media(max-width:600px){.wrap{padding:0 16px}.prop-bar{flex-direction:column;align-items:stretch}.rdi-row{flex-direction:column;gap:8px}.bubble-canvas{height:300px}}
 </style>
 </head>
 <body>
-<div class="app">
 
-<!-- AUTH GATE -->
-<div class="auth-gate" id="authGate">
-  <div class="auth-box">
-    <h2>SEO Migration Pipeline</h2>
-    <p>Enter your team password to access the dashboard</p>
-    <input type="password" id="authPwd" placeholder="Password" onkeydown="if(event.key==='Enter')tryAuth()">
-    <button class="auth-btn" onclick="tryAuth()">Sign In</button>
-    <div class="auth-error" id="authError"></div>
-    <div class="auth-hint">Contact your team lead for access credentials</div>
+<header>
+<div class="wrap">
+  <div class="header-inner">
+    <a class="logo" href="#"><div class="logo-icon">LP</div><div><div class="logo-text">GSC Intelligence</div><div class="logo-sub">SEO Intelligence Suite</div></div></a>
+    <div class="header-right">
+      <div id="userBadge" class="user-badge hidden"></div>
+      <button id="authBtn" class="auth-btn" onclick="handleAuth()">&#128274; Connect GSC</button>
+      <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">&#9789;</span> <span id="themeLabel">Dark</span></button>
+    </div>
   </div>
 </div>
+</header>
 
-<!-- LOADING -->
-<div class="loading-overlay" id="loadingOverlay" style="display:none">
-  <div class="loading-spinner"></div>
-  <p>Loading dashboard…</p>
-</div>
+<main><div class="wrap">
 
-<!-- HEADER -->
-<div class="header">
-  <div class="header-left">
-    <h1>SEO Migration Pipeline</h1>
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="auth-screen">
+    <h1>Connect Google Search Console</h1>
+    <p>Sign in with your Google account to pull GSC data directly. No CSV exports needed &mdash; get per-page daily performance, keyword data, and site structure analysis in real time.</p>
+    <button class="google-btn" onclick="handleAuth()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-features">
+      <div class="auth-feat"><div class="auth-feat-icon">&#128200;</div><div class="auth-feat-title">Per-Page Timelines</div><div class="auth-feat-desc">Daily clicks, impressions, CTR, and position for any page</div></div>
+      <div class="auth-feat"><div class="auth-feat-icon">&#127959;</div><div class="auth-feat-title">Site Structure</div><div class="auth-feat-desc">Visualize content sections and traffic distribution</div></div>
+      <div class="auth-feat"><div class="auth-feat-icon">&#128269;</div><div class="auth-feat-title">Keyword Clusters</div><div class="auth-feat-desc">See which queries drive traffic to each page</div></div>
+    </div>
   </div>
-  <div class="header-right">
-    <span class="fb-status" id="fbStatus"></span>
-    <span class="role-badge" id="roleBadge" style="display:none" onclick="signOut()"></span>
-    <button class="btn-gear" id="settingsBtn" onclick="toggleSettings()" title="Settings" style="display:none">⚙</button>
+
+  <!-- APP (shown after auth) -->
+  <div id="appScreen" class="hidden">
+
+    <!-- PROPERTY + DATE BAR -->
+    <div class="prop-bar">
+      <label>Property</label>
+      <select id="propSelect" class="prop-select" onchange="onPropChange()"></select>
+      <div class="date-range-bar">
+        <input type="date" id="dateFrom">
+        <span style="color:var(--text3);font-size:12px">to</span>
+        <input type="date" id="dateTo">
+      </div>
+      <button class="load-btn" id="loadBtn" onclick="loadData()">Load Data</button>
+    </div>
+
+    <div id="dataLoading" class="loading-overlay hidden">
+      <div class="loading-dots"><div></div><div></div><div></div></div>
+      <div class="loading-text" id="loadingText">Fetching GSC data...</div>
+      <div class="loading-sub" id="loadingSub"></div>
+    </div>
+
+    <div id="dataStatus" class="status-bar info hidden"></div>
+
+    <!-- TABS (shown after data loads) -->
+    <div id="tabsSection" class="hidden">
+      <div class="main-tabs">
+        <button class="main-tab active" onclick="switchTab('refresh',this)">&#128200; Content Refresh</button>
+        <button class="main-tab" onclick="switchTab('structure',this)">&#127959; Site Structure</button>
+      </div>
+
+      <!-- TAB: CONTENT REFRESH -->
+      <div id="tab-refresh" class="tab-pane active">
+        <h2 class="section-title">Content Refresh Correlations</h2>
+        <p class="section-desc">The timeline shows site-wide performance. Add your refresh entries below, then click Analyze. Click any card to drill into that specific page's timeline.</p>
+
+        <div class="card">
+          <div class="card-title">Refresh Log</div>
+          <div class="card-desc">Log every content update: when, which page, and what changed.</div>
+          <div id="refreshDates" class="refresh-dates-list">
+            <div class="refresh-date-item"><div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search pages..." oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite, Added FAQ"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div></div>
+          </div>
+          <button class="add-date-btn" onclick="addRow()">+ Add another entry</button>
+          <div style="display:flex;gap:12px;margin-top:20px">
+            <div style="flex:1"><label class="form-label">Primary Metric</label><select id="primaryMetric" class="form-input"><option value="clicks">Clicks</option><option value="impressions">Impressions</option><option value="ctr">CTR</option></select></div>
+            <div style="flex:1"><label class="form-label">Comparison Window</label><select id="windowDays" class="form-input"><option value="14">14 days</option><option value="30" selected>30 days</option><option value="60">60 days</option></select></div>
+          </div>
+          <button class="btn-primary" onclick="analyzeRefresh()" style="margin-top:16px">Analyze Correlations</button>
+        </div>
+
+        <div id="refreshResults" class="hidden">
+          <div class="chart-wrap">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <div><div style="font-family:'Cormorant',serif;font-size:18px;font-weight:600">Performance Timeline</div><div id="chartLabel" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px"></div></div>
+              <div id="chartMeta" style="font-size:12px;color:var(--text3)"></div>
+            </div>
+            <div class="chart-container"><canvas id="perfChart"></canvas></div>
+            <div class="chart-legend" id="chartLegend"></div>
+          </div>
+          <div id="compCards" class="comparison-grid"></div>
+        </div>
+      </div>
+
+      <!-- TAB: SITE STRUCTURE -->
+      <div id="tab-structure" class="tab-pane">
+        <h2 class="section-title">Site Structure &times; SEO Strategy</h2>
+        <p class="section-desc">Visualize how content is organized and which sections drive traffic. Click a bubble to see pages and keywords.</p>
+        <div id="ssResults">
+          <div class="bubble-map-wrap"><div class="bubble-map-title"><h3>Topical Overview</h3><div class="bubble-map-stats" id="bubbleStats"></div></div><canvas class="bubble-canvas" id="bubbleCanvas"></canvas></div>
+          <div id="detailPanel" class="hidden">
+            <div class="detail-section">
+              <div class="detail-header"><h3 id="detailTitle"></h3><div class="stats" id="detailStats"></div></div>
+              <div style="padding:8px 20px;border-bottom:1px solid var(--border);display:flex;background:var(--bg2)"><div class="page-url" style="flex:1;font-weight:600;color:var(--text3);font-size:10px;text-transform:uppercase">URL</div><div class="page-metric-label">Clicks</div><div class="page-metric-label">Impr</div><div class="page-metric-label">CTR</div><div class="page-metric-label">Pos</div></div>
+              <div class="page-list" id="detailPages"></div>
+            </div>
+            <div id="detailKw" class="kw-section hidden"><div class="kw-section-title" id="kwTitle">Keywords</div><div id="kwContainer"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- VIEWER BANNER (shown when loaded from Firebase) -->
-<div class="viewer-banner" id="viewerBanner" style="display:none">
-  <div class="vb-info">Last updated: <strong id="vbTime">—</strong> by <strong id="vbBy">—</strong></div>
-  <div class="vb-live"><span class="pulse"></span>Live from cloud</div>
-</div>
-
-<!-- DATE RANGE (visible to both admin and viewer after auth) -->
-<div class="controls" id="dateControls" style="display:none">
-  <div class="cg"><label>From</label><input type="date" id="dateFrom"></div>
-  <div class="cg"><label>To</label><input type="date" id="dateTo"></div>
-  <div class="cg"><label>&nbsp;</label><button class="btn" onclick="runDashboard();toast('Refreshed with new date range')" style="background:var(--surface-2);color:var(--gold);border:1px solid var(--gold)">Refresh</button></div>
-</div>
-
-<!-- ADMIN CONTROLS (hidden until admin authenticates) -->
-<div class="controls hidden" id="adminControls">
-  <div class="cg"><label>SLA History Export</label>
-    <div class="file-drop" id="fd1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span id="fl1">Drop .xlsx</span><input type="file" id="fi1" accept=".xlsx,.xls,.csv"></div></div>
-  <div class="cg"><label>T-14 Report <span style="color:var(--text-dim)">(optional)</span></label>
-    <div class="file-drop" id="fd2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span id="fl2">Drop T-14</span><input type="file" id="fi2" accept=".xlsx,.xls,.csv"></div></div>
-  <div class="cg"><label>&nbsp;</label><button class="btn" id="runBtn" disabled onclick="runDashboard()">Generate & Share</button></div>
-</div>
-
-<!-- RESULTS -->
-<div id="results" style="display:none">
-  <div class="tabs" id="mainTabs"></div>
-  <div id="tabContent"></div>
-</div>
-<div class="empty" id="emptyState"><p>Upload your Salesforce SLA export to begin</p></div>
-
-<!-- SETTINGS MODAL -->
-<div class="modal-overlay" id="settingsModal">
-<div class="modal">
-  <h2>Settings</h2>
-  <h3>Team Roster</h3>
-  <div id="rosterList"></div>
-  <button class="add-link" onclick="addRoster()">+ Add member</button>
-  <h3>Name Mapping</h3>
-  <p style="font-size:10px;color:var(--text-dim);margin-bottom:6px">Map Salesforce names → standardized names</p>
-  <div id="mappingList"></div>
-  <button class="add-link" onclick="addMapping()">+ Add mapping</button>
-  <div class="modal-footer">
-    <button class="btn-sm" onclick="toggleSettings()">Cancel</button>
-    <button class="btn" onclick="saveSettings()">Save</button>
-  </div>
-</div></div>
-
-<div class="toast" id="toast"></div>
-</div>
+</div></main>
 
 <script>
-// ═══════════════════════════════════════
-// FIREBASE CONFIG — Fill in your values
-// ═══════════════════════════════════════
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC7Njz5y7TMezxEMr4gCFLcyWFUr5iF0bY",
-  authDomain: "seo-migration-pipline.firebaseapp.com",
-  databaseURL: "https://seo-migration-pipline-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "seo-migration-pipline",
-  storageBucket: "seo-migration-pipline.firebasestorage.app",
-  messagingSenderId: "661012271767",
-  appId: "1:661012271767:web:3f5b3ddc84ee5312200fd2"
-};
-const ADMIN_PASSWORD = "@dm!nSEOGAva$!@";   // Team lead password — upload + settings
-const VIEWER_PASSWORD = "SEOGAva$!@"; // Team member password — view only
-let fbApp=null,fbDb=null,fbReady=false,isAdmin=false,isAuthed=false;
+/* ════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════ */
+var CLIENT_ID='432945247107-lfssrl2g1knosvjdu97prk50013erni9.apps.googleusercontent.com';
+var SCOPES='https://www.googleapis.com/auth/webmasters.readonly';
+var tokenClient;
+var accessToken='';
 
-// ═══════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════
-let slaRaw=[],parsedRows=[],launchDates={},t14Status={};
-let settings={
-  roster:['Aizel Joy Potot','Chito Anton Chavez','Christian Mayor','Jocelyn Separa','Khristine Cronologia','Paula Membrillo Lihay-Lihay','Rachelle Anne Nicole Magrata'],
-  nameMap:{'Paula Lihay-Lihay':'Paula Membrillo Lihay-Lihay','SEO Team':'SEO Team'}
-};
-const SLA_H=24,NOW=new Date();
-const T14_ORDER=['Pre-Onboarding Interview','Website Draft Build','Website Draft Review','Website Updates in Progress','Website Updates Complete','QAs + Launch','Website Launched','On hold','Pre-Unresponsive','Unresponsive','Cancelled'];
-const T14_READY_MIN='Website Draft Build';
-const T14_MAP_READY=['Website Draft Review','Website Updates in Progress','Website Updates Complete','QAs + Launch','Website Launched'];
-const T14_PRIORITY_MAP={'Website Draft Review':1,'Website Updates in Progress':2,'Website Updates Complete':3,'QAs + Launch':4,'Website Launched':5};
+/* STATE */
+var siteList=[];
+var selectedSite='';
+var siteTimeline=[];     // daily site-wide [{date,clicks,impressions,ctr,position}]
+var sitePages=[];        // aggregate pages [{url,clicks,impressions,ctr,position}]
+var siteQueries=[];      // aggregate queries [{query,clicks,...,page}]
+var pageUrls=[];         // sorted page URLs for search
+var pageClickMap={};     // url -> clicks
+var ssSections={};
+var ssSorted=[];
+var bubbles=[];
+var chartInst=null;
+var compResults=[];
+var refreshDates=[];
 
-try{const s=localStorage.getItem('seo_dash_v2');if(s)settings=JSON.parse(s)}catch(e){}
-const today=new Date();
-document.getElementById('dateFrom').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
-document.getElementById('dateTo').value=today.toISOString().split('T')[0];
+/* ════════════════════════════════════════
+   THEME
+════════════════════════════════════════ */
+function toggleTheme(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);document.getElementById('themeLabel').textContent=n==='dark'?'Dark':'Light';document.getElementById('themeIcon').textContent=n==='dark'?'\u263D':'\u2600';if(ssSorted.length)drawBubbles()}
+function switchTab(id,btn){document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active')});document.querySelectorAll('.main-tab').forEach(function(b){b.classList.remove('active')});document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='structure'&&ssSorted.length)requestAnimationFrame(function(){requestAnimationFrame(drawBubbles)})}
+function escHtml(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function fmtNum(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return Math.round(n).toLocaleString()}
+function avg(a){if(!a.length)return 0;var s=0;for(var i=0;i<a.length;i++)s+=a[i];return s/a.length}
+function pctChg(b,a){if(b===0)return a>0?'100':'0';return((a-b)/b*100).toFixed(1)}
+function truncPath(url){try{var u=new URL(url.startsWith('http')?url:'https://x.com'+url);var p=u.pathname;return p.length>55?p.slice(0,52)+'...':p||'/'}catch(e){return url.length>55?url.slice(0,52)+'...':url}}
+function getSection(url){try{var u=new URL(url.startsWith('http')?url:'https://x.com'+url);var parts=u.pathname.split('/').filter(function(p){return p.length>0});return parts.length===0?'/ (homepage)':'/'+parts[0]+'/'}catch(e){var m=url.match(/\/([^\/]+)\//);return m?'/'+m[1]+'/':'/'}}
+function showLoading(msg,sub){document.getElementById('dataLoading').classList.remove('hidden');document.getElementById('loadingText').textContent=msg;document.getElementById('loadingSub').textContent=sub||''}
+function hideLoading(){document.getElementById('dataLoading').classList.add('hidden')}
+function showStatus(t,m){var e=document.getElementById('dataStatus');e.className='status-bar '+t;e.textContent=m;e.classList.remove('hidden')}
 
-// ═══════════════════════════════════════
-// FIREBASE INIT + LOAD
-// ═══════════════════════════════════════
-function initFirebase(){
+/* ════════════════════════════════════════
+   OAUTH
+════════════════════════════════════════ */
+function handleAuth(){
+  if(accessToken){
+    // Already authed, disconnect
+    accessToken='';
+    google.accounts.oauth2.revoke(accessToken);
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+    document.getElementById('authBtn').innerHTML='&#128274; Connect GSC';
+    document.getElementById('authBtn').classList.remove('connected');
+    document.getElementById('userBadge').classList.add('hidden');
+    return;
+  }
+
+  if(!tokenClient){
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:CLIENT_ID,
+      scope:SCOPES,
+      callback:onTokenResponse
+    });
+  }
+  tokenClient.requestAccessToken();
+}
+
+function onTokenResponse(resp){
+  if(resp.error){console.error('OAuth error:',resp);return}
+  accessToken=resp.access_token;
+  console.log('[GSCIntel] OAuth success, fetching sites...');
+
+  document.getElementById('authBtn').innerHTML='&#9679; Connected';
+  document.getElementById('authBtn').classList.add('connected');
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+
+  // Fetch user info
+  gscFetch('https://www.googleapis.com/oauth2/v1/userinfo').then(function(u){
+    if(u&&u.email){
+      document.getElementById('userBadge').innerHTML=(u.picture?'<img src="'+u.picture+'" alt="">':'')+escHtml(u.email);
+      document.getElementById('userBadge').classList.remove('hidden');
+    }
+  }).catch(function(){});
+
+  fetchSites();
+}
+
+/* ════════════════════════════════════════
+   GSC API
+════════════════════════════════════════ */
+function gscFetch(url,body){
+  var opts={headers:{'Authorization':'Bearer '+accessToken}};
+  if(body){opts.method='POST';opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}
+  return fetch(url,opts).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  });
+}
+
+function fetchSites(){
+  showLoading('Fetching your GSC properties...');
+  gscFetch('https://www.googleapis.com/webmasters/v3/sites').then(function(data){
+    siteList=(data.siteEntry||[]).filter(function(s){return s.permissionLevel!=='siteUnverifiedUser'});
+    if(!siteList.length){hideLoading();showStatus('error','No GSC properties found for this account.');return}
+
+    var sel=document.getElementById('propSelect');sel.innerHTML='';
+    siteList.forEach(function(s){var o=document.createElement('option');o.value=s.siteUrl;o.textContent=s.siteUrl;sel.appendChild(o)});
+    selectedSite=siteList[0].siteUrl;
+
+    // Default date range: last 3 months
+    var now=new Date();
+    var from=new Date(now);from.setMonth(from.getMonth()-3);
+    document.getElementById('dateTo').value=now.toISOString().slice(0,10);
+    document.getElementById('dateFrom').value=from.toISOString().slice(0,10);
+
+    hideLoading();
+  }).catch(function(e){hideLoading();showStatus('error','Failed to fetch sites: '+e.message)});
+}
+
+function onPropChange(){selectedSite=document.getElementById('propSelect').value}
+
+async function loadData(){
+  if(!selectedSite||!accessToken)return;
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  if(!from||!to){showStatus('error','Please select a date range.');return}
+  var base='https://www.googleapis.com/webmasters/v3/sites/'+encodeURIComponent(selectedSite)+'/searchAnalytics/query';
+
+  showLoading('Fetching site-wide daily data...','Step 1 of 3');
   try{
-    if(FIREBASE_CONFIG.apiKey==='YOUR_API_KEY'){
-      setFbStatus('Not configured','error');
-      return;
-    }
-    fbApp=firebase.initializeApp(FIREBASE_CONFIG);
-    fbDb=firebase.database();
-    fbReady=true;
-    setFbStatus('Connected','connected');
-    // Don't auto-load — wait for authentication
-    restoreSession();
+    // 1. Daily timeline (site-wide)
+    var r1=await gscFetch(base,{startDate:from,endDate:to,dimensions:['date'],rowLimit:25000});
+    siteTimeline=(r1.rows||[]).map(function(r){return{date:r.keys[0],clicks:r.clicks,impressions:r.impressions,ctr:r.ctr,position:r.position}});
+    siteTimeline.sort(function(a,b){return a.date.localeCompare(b.date)});
+    console.log('[GSCIntel] Timeline:',siteTimeline.length,'days');
+
+    // 2. Pages (aggregate)
+    document.getElementById('loadingText').textContent='Fetching page data...';
+    document.getElementById('loadingSub').textContent='Step 2 of 3';
+    var r2=await gscFetch(base,{startDate:from,endDate:to,dimensions:['page'],rowLimit:25000});
+    sitePages=(r2.rows||[]).map(function(r){return{url:r.keys[0],clicks:r.clicks,impressions:r.impressions,ctr:r.ctr,position:r.position}});
+    sitePages.sort(function(a,b){return b.clicks-a.clicks});
+    pageUrls=sitePages.map(function(p){return p.url});
+    pageClickMap={};sitePages.forEach(function(p){pageClickMap[p.url]=p.clicks});
+    console.log('[GSCIntel] Pages:',sitePages.length);
+
+    // 3. Queries
+    document.getElementById('loadingText').textContent='Fetching keyword data...';
+    document.getElementById('loadingSub').textContent='Step 3 of 3';
+    var r3=await gscFetch(base,{startDate:from,endDate:to,dimensions:['query'],rowLimit:25000});
+    siteQueries=(r3.rows||[]).map(function(r){return{query:r.keys[0],clicks:r.clicks,impressions:r.impressions,ctr:r.ctr,position:r.position,page:''}});
+    console.log('[GSCIntel] Queries:',siteQueries.length);
+
+    // Build site structure
+    buildSiteStructure();
+
+    hideLoading();
+    showStatus('success','Loaded '+siteTimeline.length+' days, '+sitePages.length+' pages, '+siteQueries.length+' queries');
+    document.getElementById('tabsSection').classList.remove('hidden');
+
   }catch(e){
-    console.error('Firebase init error:',e);
-    setFbStatus('Connection error','error');
-  }
-}
-function setFbStatus(msg,cls){
-  const el=document.getElementById('fbStatus');
-  el.textContent=msg;el.className='fb-status'+(cls?' '+cls:'');
-}
-function loadFromFirebase(){
-  if(!fbReady||!isAuthed)return;
-  document.getElementById('loadingOverlay').style.display='flex';
-  fbDb.ref('dashboard').once('value').then(snap=>{
-    const data=snap.val();
-    document.getElementById('loadingOverlay').style.display='none';
-    if(!data||!data.parsedRows){
-      // No data yet
-      document.getElementById('emptyState').innerHTML='<p>Waiting for admin to upload data</p>';
-      return;
-    }
-    // Deserialize
-    parsedRows=data.parsedRows.map(r=>({
-      ...r,
-      dt:r.dt?new Date(r.dt):null,
-      createdDate:r.createdDate?new Date(r.createdDate):null
-    }));
-    t14Status={};
-    if(data.t14Status){
-      const km=data.keyMap||{};
-      for(const[k,v]of Object.entries(data.t14Status)){
-        t14Status[km[k]||k]=v; // Restore original key if mapped
-      }
-    }
-    launchDates={};
-    if(data.launchDates){
-      const km=data.keyMap||{};
-      for(const[k,v]of Object.entries(data.launchDates))launchDates[km[k]||k]=new Date(v);
-    }
-    if(data.settings)settings=data.settings;
-    if(data.dateFrom)document.getElementById('dateFrom').value=data.dateFrom;
-    if(data.dateTo)document.getElementById('dateTo').value=data.dateTo;
-    // Show viewer banner
-    document.getElementById('viewerBanner').style.display='flex';
-    if(data.lastUpdated){
-      const d=new Date(data.lastUpdated);
-      document.getElementById('vbTime').textContent=fmtDt(d);
-    }
-    document.getElementById('vbBy').textContent=data.updatedBy||'Admin';
-    // Run dashboard
-    runDashboard();
-  }).catch(e=>{
-    document.getElementById('loadingOverlay').style.display='none';
-    console.error('Firebase load error:',e);
-    setFbStatus('Load error','error');
-    toast('LOAD ERROR: '+e.message);
-  });
-}
-function saveToFirebase(){
-  if(!fbReady)return;
-  toast('Saving to cloud…');
-  // Firebase keys can't contain . $ # [ ] /
-  function sanitizeKey(k){return k.replace(/[.#$\/\[\]]/g,'_')}
-  function sanitizeKeys(obj){
-    if(!obj||typeof obj!=='object')return obj;
-    const out={};
-    for(const[k,v]of Object.entries(obj))out[sanitizeKey(k)]=v;
-    return out;
-  }
-  // Clean function: replace undefined with null (Firebase rejects undefined)
-  function clean(obj){
-    if(obj===undefined)return null;
-    if(obj===null||typeof obj!=='object')return obj;
-    if(Array.isArray(obj))return obj.map(clean);
-    const out={};
-    for(const[k,v]of Object.entries(obj)){
-      out[k]=v===undefined?null:typeof v==='object'&&v!==null?clean(v):v;
-    }
-    return out;
-  }
-  // Serialize dates to ISO strings
-  const serialRows=parsedRows.map(r=>{
-    const row={};
-    for(const[k,v]of Object.entries(r)){
-      if(v instanceof Date)row[k]=v.toISOString();
-      else if(v===undefined)row[k]=null;
-      else row[k]=v;
-    }
-    return row;
-  });
-  const serialLaunch={};
-  for(const[k,v]of Object.entries(launchDates)){
-    serialLaunch[sanitizeKey(k)]=v instanceof Date?v.toISOString():v;
-  }
-  // Save original keys as a parallel lookup for restoring on load
-  const keyMap={};
-  for(const k of Object.keys(t14Status)){
-    const sk=sanitizeKey(k);
-    if(sk!==k)keyMap[sk]=k;
-  }
-  const payload=clean({
-    parsedRows:serialRows,
-    t14Status:sanitizeKeys(t14Status),
-    launchDates:serialLaunch,
-    keyMap,
-    settings,
-    dateFrom:document.getElementById('dateFrom').value,
-    dateTo:document.getElementById('dateTo').value,
-    lastUpdated:new Date().toISOString(),
-    updatedBy:'Team Lead'
-  });
-  fbDb.ref('dashboard').set(payload).then(()=>{
-    toast('Dashboard saved & shared to team');
-    document.getElementById('viewerBanner').style.display='flex';
-    document.getElementById('vbTime').textContent=fmtDt(new Date());
-    document.getElementById('vbBy').textContent='Team Lead';
-  }).catch(e=>{
-    console.error('Firebase save error:',e);
-    toast('SAVE ERROR: '+e.message);
-    alert('Firebase save failed:\n\n'+e.message+'\n\nCheck your database rules in Firebase Console.');
-  });
-}
-
-// ═══════════════════════════════════════
-// AUTHENTICATION
-// ═══════════════════════════════════════
-function tryAuth(){
-  const pwd=document.getElementById('authPwd').value;
-  const errEl=document.getElementById('authError');
-  if(pwd===ADMIN_PASSWORD){
-    isAdmin=true;isAuthed=true;
-    onAuthenticated('admin');
-  }else if(pwd===VIEWER_PASSWORD){
-    isAdmin=false;isAuthed=true;
-    onAuthenticated('viewer');
-  }else{
-    errEl.textContent='Incorrect password';
-    document.getElementById('authPwd').classList.add('error');
-    setTimeout(()=>{
-      errEl.textContent='';
-      document.getElementById('authPwd').classList.remove('error');
-    },2000);
-  }
-}
-function onAuthenticated(role){
-  // Hide auth gate
-  document.getElementById('authGate').style.display='none';
-  // Show role badge
-  const badge=document.getElementById('roleBadge');
-  badge.style.display='';
-  badge.className='role-badge '+ role;
-  badge.innerHTML=(role==='admin'?'🔓 Admin':'👁 Viewer')+' <span style="font-size:8px;opacity:.6;margin-left:2px">sign out</span>';
-  if(role==='admin'){
-    document.getElementById('adminControls').classList.remove('hidden');
-    document.getElementById('settingsBtn').style.display='';
-  }
-  // Store session (tab-lifetime only)
-  sessionStorage.setItem('seo_dash_role',role);
-  // Load data
-  if(fbReady)loadFromFirebase();
-}
-function signOut(){
-  isAdmin=false;isAuthed=false;
-  sessionStorage.removeItem('seo_dash_role');
-  // Reset UI
-  document.getElementById('authGate').style.display='flex';
-  document.getElementById('roleBadge').style.display='none';
-  document.getElementById('adminControls').classList.add('hidden');
-  document.getElementById('settingsBtn').style.display='none';
-  document.getElementById('results').style.display='none';
-  document.getElementById('emptyState').style.display='';
-  document.getElementById('viewerBanner').style.display='none';
-  document.getElementById('dateControls').style.display='none';
-  document.getElementById('authPwd').value='';
-}
-function restoreSession(){
-  const role=sessionStorage.getItem('seo_dash_role');
-  if(role==='admin'||role==='viewer'){
-    isAuthed=true;isAdmin=(role==='admin');
-    onAuthenticated(role);
+    hideLoading();
+    showStatus('error','API error: '+e.message);
+    console.error('[GSCIntel]',e);
   }
 }
 
-// ═══════════════════════════════════════
-// FILE HANDLING
-// ═══════════════════════════════════════
-function setupDrop(dId,iId,lId,cb){
-  const dr=document.getElementById(dId),inp=document.getElementById(iId),lb=document.getElementById(lId);
-  ['dragenter','dragover'].forEach(e=>dr.addEventListener(e,ev=>{ev.preventDefault();dr.style.borderColor='var(--gold)'}));
-  ['dragleave','drop'].forEach(e=>dr.addEventListener(e,ev=>{ev.preventDefault();dr.style.borderColor=''}));
-  dr.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)readF(ev.dataTransfer.files[0],dr,lb,cb)});
-  inp.addEventListener('change',ev=>{if(ev.target.files.length)readF(ev.target.files[0],dr,lb,cb)});
+/* FETCH PER-PAGE TIMELINE (for drill-down) */
+async function fetchPageTimeline(pageUrl){
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  var base='https://www.googleapis.com/webmasters/v3/sites/'+encodeURIComponent(selectedSite)+'/searchAnalytics/query';
+  var r=await gscFetch(base,{
+    startDate:from,endDate:to,
+    dimensions:['date'],
+    dimensionFilterGroups:[{filters:[{dimension:'page',expression:pageUrl}]}],
+    rowLimit:25000
+  });
+  var timeline=(r.rows||[]).map(function(row){return{date:row.keys[0],clicks:row.clicks,impressions:row.impressions,ctr:row.ctr,position:row.position}});
+  timeline.sort(function(a,b){return a.date.localeCompare(b.date)});
+  return timeline;
 }
-function readF(file,dr,lb,cb){
-  lb.textContent=file.name;dr.classList.add('loaded');
-  const r=new FileReader();
-  r.onload=e=>{
-    const bytes=new Uint8Array(e.target.result);
-    // Detect HTML-as-XLS: check first bytes for '<head' or '<html'
-    const head=String.fromCharCode(...bytes.slice(0,20));
-    if(head.includes('<head')||head.includes('<html')||head.includes('<HEAD')){
-      // Parse as HTML table
-      const text=new TextDecoder('iso-8859-1').decode(bytes);
-      const rows=parseHTMLTable(text);
-      cb(null,rows);
-    }else{
-      // Parse as real XLSX
-      const wb=XLSX.read(bytes,{type:'array',cellDates:false});
-      cb(wb,null);
-    }
-  };
-  r.readAsArrayBuffer(file);
+
+/* FETCH QUERIES FOR A PAGE */
+async function fetchPageQueries(pageUrl){
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  var base='https://www.googleapis.com/webmasters/v3/sites/'+encodeURIComponent(selectedSite)+'/searchAnalytics/query';
+  var r=await gscFetch(base,{
+    startDate:from,endDate:to,
+    dimensions:['query'],
+    dimensionFilterGroups:[{filters:[{dimension:'page',expression:pageUrl}]}],
+    rowLimit:5000
+  });
+  return(r.rows||[]).map(function(row){return{query:row.keys[0],clicks:row.clicks,impressions:row.impressions,ctr:row.ctr,position:row.position}});
 }
-function parseHTMLTable(html){
-  const rows=[];let cr=[];let inCell=false;let ct='';
-  // Simple parser - split by tags
-  const tagRe=/<\/?([a-zA-Z]+)[^>]*>/g;
-  let lastIdx=0,match;
-  while(match=tagRe.exec(html)){
-    if(inCell)ct+=html.substring(lastIdx,match.index);
-    lastIdx=match.index+match[0].length;
-    const tag=match[1].toLowerCase();const isClose=match[0][1]==='/';
-    if(!isClose&&(tag==='td'||tag==='th')){inCell=true;ct=''}
-    if(isClose&&(tag==='td'||tag==='th')){inCell=false;cr.push(ct.trim())}
-    if(isClose&&tag==='tr'){if(cr.length)rows.push(cr);cr=[]}
+
+/* Fetch queries for an entire section (e.g. /blog/) using contains filter */
+async function fetchSectionQueries(sectionPath){
+  var from=document.getElementById('dateFrom').value;
+  var to=document.getElementById('dateTo').value;
+  var base='https://www.googleapis.com/webmasters/v3/sites/'+encodeURIComponent(selectedSite)+'/searchAnalytics/query';
+  // Use 'containing' operator to match all pages in this section
+  var filterExpr=sectionPath;
+  // For homepage, don't filter
+  if(sectionPath==='/ (homepage)'||sectionPath==='/'||sectionPath==='__zero__'){
+    var r=await gscFetch(base,{startDate:from,endDate:to,dimensions:['query'],rowLimit:5000});
+    return(r.rows||[]).map(function(row){return{query:row.keys[0],clicks:row.clicks,impressions:row.impressions,ctr:row.ctr,position:row.position}});
   }
-  return rows;
+  var r=await gscFetch(base,{
+    startDate:from,endDate:to,
+    dimensions:['query'],
+    dimensionFilterGroups:[{filters:[{dimension:'page',operator:'contains',expression:filterExpr}]}],
+    rowLimit:5000
+  });
+  return(r.rows||[]).map(function(row){return{query:row.keys[0],clicks:row.clicks,impressions:row.impressions,ctr:row.ctr,position:row.position}});
 }
-setupDrop('fd1','fi1','fl1',(wb,htmlRows)=>{
-  if(htmlRows){slaRaw=htmlRows}
-  else{const sh=wb.Sheets[wb.SheetNames[0]];slaRaw=XLSX.utils.sheet_to_json(sh,{header:1,raw:true,defval:''})}
-  parseSLA();document.getElementById('runBtn').disabled=false;
-  toast(`Loaded ${parsedRows.length.toLocaleString()} rows`)
-});
-setupDrop('fd2','fi2','fl2',(wb,htmlRows)=>{
-  if(htmlRows){/* T-14 won't be HTML */}
-  if(wb)parseT14(wb);
-  toast(`T-14: ${Object.keys(launchDates).length} launch dates, ${Object.keys(t14Status).length} statuses matched`)
+
+/* ════════════════════════════════════════
+   CONTENT REFRESH
+════════════════════════════════════════ */
+function addRow(){var l=document.getElementById('refreshDates');var d=document.createElement('div');d.className='refresh-date-item';d.innerHTML='<div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search..." oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div>';l.appendChild(d)}
+function removeRow(btn){var l=document.getElementById('refreshDates');var item=btn.closest('.refresh-date-item');if(l.children.length>1)item.remove();else{item.querySelector('.date-input').value='';item.querySelector('.page-input').value='';item.querySelector('.page-input').classList.remove('has-value');item.querySelector('.note-input').value=''}}
+function getRefreshEntries(){var items=document.querySelectorAll('.refresh-date-item');var d=[];for(var i=0;i<items.length;i++){var dt=items[i].querySelector('.date-input').value;var pg=items[i].querySelector('.page-input').value;var n=items[i].querySelector('.note-input').value;if(dt)d.push({date:dt,page:pg||'',note:n||'Content refresh'})}return d}
+
+function filterRP(input){
+  var q=input.value.toLowerCase();
+  var dd=input.parentElement.querySelector('.rdi-dropdown');
+  var matches=pageUrls.filter(function(u){return u.toLowerCase().indexOf(q)>=0});
+  if(!matches.length){dd.innerHTML='<div class="rdi-no">No match</div>'}else{
+    var html='';var lim=Math.min(matches.length,12);
+    for(var i=0;i<lim;i++){html+='<div class="rdi-opt" data-url="'+escHtml(matches[i])+'"><span>'+escHtml(truncPath(matches[i]))+'</span><span class="rdi-clicks">'+fmtNum(pageClickMap[matches[i]]||0)+'</span></div>'}
+    if(matches.length>12)html+='<div class="rdi-no">'+(matches.length-12)+' more...</div>';
+    dd.innerHTML=html;}
+  showRPDD(input,true);
+  if(input.value&&pageUrls.indexOf(input.value)>=0)input.classList.add('has-value');else input.classList.remove('has-value');
+}
+function showRPDD(input,show){var dd=input.parentElement.querySelector('.rdi-dropdown');if(show&&pageUrls.length>0){if(!dd.innerHTML)filterRP(input);dd.classList.remove('hidden')}else{setTimeout(function(){dd.classList.add('hidden')},200)}}
+document.addEventListener('click',function(e){var opt=e.target.closest('.rdi-opt');if(opt){var url=opt.getAttribute('data-url');var wrap=opt.closest('.rdi-page-wrap');var input=wrap.querySelector('.page-input');input.value=url;input.classList.add('has-value');wrap.querySelector('.rdi-dropdown').classList.add('hidden');return}if(!e.target.closest('.rdi-page-wrap'))document.querySelectorAll('.rdi-dropdown').forEach(function(d){d.classList.add('hidden')})});
+
+function analyzeRefresh(){
+  refreshDates=getRefreshEntries();
+  if(!siteTimeline.length){showStatus('error','Please load GSC data first.');return}
+  buildChart(siteTimeline,refreshDates,'Site-wide');
+  if(refreshDates.length)buildComps(siteTimeline,refreshDates);
+  document.getElementById('refreshResults').classList.remove('hidden');
+  document.getElementById('refreshResults').scrollIntoView({behavior:'smooth'});
+}
+
+function buildChart(data,ref,label){
+  if(typeof Chart==='undefined'){showStatus('error','Chart.js not loaded.');return}
+  var canvas=document.getElementById('perfChart');
+  if(chartInst){chartInst.destroy();chartInst=null}
+  document.getElementById('chartLabel').textContent=label||'';
+  document.getElementById('chartMeta').textContent=data.length+' days'+(ref.length?' \u00B7 '+ref.length+' refresh(es)':'');
+
+  var dk=document.documentElement.getAttribute('data-theme')==='dark';
+  var metricSel=document.getElementById('primaryMetric');
+  var metric=metricSel?metricSel.value:'clicks';
+  var mD,mL,mC;
+  if(metric==='clicks'){mD=data.map(function(d){return d.clicks});mL='Clicks';mC=dk?'#eeb75d':'#b8860b'}
+  else if(metric==='impressions'){mD=data.map(function(d){return d.impressions});mL='Impressions';mC=dk?'#6ba3d4':'#2d6a9f'}
+  else{mD=data.map(function(d){return d.ctr*100});mL='CTR (%)';mC=dk?'#b48ad4':'#7a4a9f'}
+
+  var labels=data.map(function(d){return d.date});
+  var posColor=dk?'rgba(212,117,106,0.8)':'rgba(160,53,42,0.7)';
+  var refColor=dk?'rgba(126,207,160,0.8)':'rgba(45,122,80,0.8)';
+  var refLabelC=dk?'#7ecfa0':'#2d7a50';
+  var refBg=dk?'rgba(126,207,160,0.12)':'rgba(45,122,80,0.08)';
+
+  var refreshPlugin={id:'refreshLines',afterDraw:function(chart){
+    if(!ref.length)return;var xS=chart.scales.x;var yS=chart.scales.y;var c=chart.ctx;
+    for(var i=0;i<ref.length;i++){var idx=labels.indexOf(ref[i].date);if(idx<0){for(var j=0;j<labels.length;j++){if(labels[j]>=ref[i].date){idx=j;break}}}if(idx<0)continue;
+      var x=xS.getPixelForValue(idx);c.save();c.beginPath();c.setLineDash([6,4]);c.strokeStyle=refColor;c.lineWidth=2;c.moveTo(x,yS.top);c.lineTo(x,yS.bottom);c.stroke();c.setLineDash([]);
+      var lbl=(ref[i].note||'').slice(0,20);c.font='500 10px "DM Sans"';var tw=c.measureText(lbl).width;
+      c.fillStyle=refBg;c.beginPath();try{c.roundRect(x-tw/2-6,yS.top-18,tw+12,16,4)}catch(e){c.rect(x-tw/2-6,yS.top-18,tw+12,16)}c.fill();
+      c.fillStyle=refLabelC;c.textAlign='center';c.textBaseline='bottom';c.fillText(lbl,x,yS.top-4);c.restore()}}};
+
+  chartInst=new Chart(canvas,{type:'line',plugins:[refreshPlugin],data:{labels:labels,datasets:[
+    {label:mL,data:mD,borderColor:mC,backgroundColor:mC+'22',fill:true,tension:.3,pointRadius:2,pointHoverRadius:6,pointBackgroundColor:mC,borderWidth:2.5,yAxisID:'y'},
+    {label:'Position',data:data.map(function(d){return d.position}),borderColor:posColor,fill:false,tension:.3,pointRadius:1.5,borderWidth:2,borderDash:[5,3],yAxisID:'yPos'}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false}},layout:{padding:{top:24}},scales:{x:{grid:{color:dk?'rgba(238,183,93,0.08)':'rgba(0,0,0,0.08)'},ticks:{font:{family:'"DM Mono"',size:10},maxTicksLimit:12,maxRotation:45,color:dk?'#9a9080':'#6a6055'}},y:{position:'left',grid:{color:dk?'rgba(238,183,93,0.08)':'rgba(0,0,0,0.08)'},ticks:{color:mC},title:{display:true,text:mL,color:mC}},yPos:{position:'right',reverse:true,grid:{display:false},ticks:{color:posColor},title:{display:true,text:'Position',color:posColor}}}}});
+  document.getElementById('chartLegend').innerHTML='<div class="chart-legend-item"><div class="chart-legend-dot" style="background:'+mC+'"></div>'+mL+'</div><div class="chart-legend-item"><div class="chart-legend-dot" style="background:'+posColor+'"></div>Position</div>'+(ref.length?'<div class="chart-legend-item"><div class="chart-legend-dot" style="background:'+refColor+'"></div>Refresh</div>':'');
+}
+
+function buildComps(data,ref){
+  var wSel=document.getElementById('windowDays');
+  var w=wSel?parseInt(wSel.value):30;
+  compResults=[];var html='';
+  for(var r2=0;r2<ref.length;r2++){
+    var rd=new Date(ref[r2].date);var b={c:[],im:[],ct:[],p:[]},a={c:[],im:[],ct:[],p:[]};
+    for(var i=0;i<data.length;i++){var d=new Date(data[i].date);var diff=(d-rd)/864e5;
+      if(diff>=-w&&diff<0){b.c.push(data[i].clicks);b.im.push(data[i].impressions);b.ct.push(data[i].ctr);b.p.push(data[i].position)}
+      else if(diff>=0&&diff<=w){a.c.push(data[i].clicks);a.im.push(data[i].impressions);a.ct.push(data[i].ctr);a.p.push(data[i].position)}}
+    var m={date:ref[r2].date,page:ref[r2].page||'',note:ref[r2].note,clicks:{b:avg(b.c),a:avg(a.c)},impr:{b:avg(b.im),a:avg(a.im)},ctr:{b:avg(b.ct),a:avg(a.ct)},pos:{b:avg(b.p),a:avg(a.p)}};
+    compResults.push(m);
+    html+='<div class="comp-card" data-idx="'+r2+'" onclick="drillDown('+r2+')"><div class="comp-card-date">'+m.date+'</div><div class="comp-card-page">'+escHtml(m.page?truncPath(m.page):'Site-wide')+'</div><div class="comp-card-note">'+escHtml(m.note)+' &middot; '+w+'d window</div>'+
+      cRow('Clicks/day',fmtNum(m.clicks.b),fmtNum(m.clicks.a),pctChg(m.clicks.b,m.clicks.a),0)+
+      cRow('Impr/day',fmtNum(m.impr.b),fmtNum(m.impr.a),pctChg(m.impr.b,m.impr.a),0)+
+      cRow('CTR',(m.ctr.b*100).toFixed(2)+'%',(m.ctr.a*100).toFixed(2)+'%',pctChg(m.ctr.b,m.ctr.a),0)+
+      cRow('Position',m.pos.b.toFixed(1),m.pos.a.toFixed(1),(m.pos.b-m.pos.a).toFixed(1),1)+
+      '<div class="comp-card-drill">&#8599; Click to see this page\'s timeline</div></div>';
+  }
+  document.getElementById('compCards').innerHTML=html;
+}
+function cRow(l,bv,av,ch,isP){var n=parseFloat(ch);var cls,pfx;if(isP){cls=n>0.5?'pos-up':n<-0.5?'pos-down':'neutral';pfx=n>0.5?'\u2191 ':n<-0.5?'\u2193 ':'';ch=(n>0?'+':'')+ch+' pos'}else{cls=n>1?'up':n<-1?'down':'neutral';pfx=n>1?'\u2191 ':n<-1?'\u2193 ':'';ch=(n>0?'+':'')+ch+'%'}return'<div class="comp-row"><div class="comp-metric">'+l+'</div><div class="comp-values"><span class="comp-before">'+bv+'</span><span style="color:var(--text3);font-size:11px">\u2192</span><span class="comp-after">'+av+'</span><span class="comp-change '+cls+'">'+pfx+ch+'</span></div></div>'}
+
+/* DRILL DOWN — fetch per-page timeline and redraw chart */
+async function drillDown(idx){
+  var entry=compResults[idx];
+  if(!entry||!entry.page){showStatus('info','No page specified for this entry. Add a page URL to the refresh log to drill down.');return}
+
+  // Highlight card
+  document.querySelectorAll('.comp-card').forEach(function(c){c.classList.remove('active')});
+  document.querySelector('.comp-card[data-idx="'+idx+'"]').classList.add('active');
+
+  document.getElementById('chartLabel').textContent='Loading '+truncPath(entry.page)+'...';
+  try{
+    var timeline=await fetchPageTimeline(entry.page);
+    if(!timeline.length){showStatus('error','No daily data returned for '+entry.page);return}
+    // Only show this entry's refresh marker
+    var pageRefs=refreshDates.filter(function(r){return r.page===entry.page});
+    buildChart(timeline,pageRefs,truncPath(entry.page));
+    document.querySelector('.chart-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    showStatus('error','Failed to fetch page data: '+e.message);
+  }
+}
+
+/* ════════════════════════════════════════
+   SITE STRUCTURE
+════════════════════════════════════════ */
+function buildSiteStructure(){
+  ssSections={};var totalClicks=0;
+  for(var i=0;i<sitePages.length;i++){
+    var pg=sitePages[i];totalClicks+=pg.clicks;
+    var sec=getSection(pg.url);
+    if(!ssSections[sec])ssSections[sec]={pages:[],clicks:0,impressions:0,ctrSum:0,posSum:0};
+    ssSections[sec].pages.push(pg);ssSections[sec].clicks+=pg.clicks;ssSections[sec].impressions+=pg.impressions;ssSections[sec].ctrSum+=pg.ctr;ssSections[sec].posSum+=pg.position;
+  }
+  ssSorted=Object.keys(ssSections).sort(function(a,b){return ssSections[b].clicks-ssSections[a].clicks});
+  document.getElementById('bubbleStats').innerHTML='<span>'+ssSorted.length+'</span> sections &middot; <span>'+sitePages.length+'</span> pages &middot; <span>'+fmtNum(totalClicks)+'</span> clicks';
+}
+
+function drawBubbles(){
+  var canvas=document.getElementById('bubbleCanvas');
+  var ctx=canvas.getContext('2d');
+  var dpr=window.devicePixelRatio||1;
+  var rect=canvas.getBoundingClientRect();
+  if(rect.width<10)return;
+  canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
+  ctx.scale(dpr,dpr);
+  var W=rect.width,H=rect.height;
+  var dk=document.documentElement.getAttribute('data-theme')==='dark';
+  var colors=dk?['#eeb75d','#6ba3d4','#7ecfa0','#b48ad4','#d4756a','#e0c97a','#6ad4b4','#d49a6b','#a0b4d4','#d4a0b4']:['#b8860b','#2d6a9f','#2d7a50','#7a4a9f','#a0352a','#9a8030','#2a9070','#9f5a2d','#4a6a9f','#9f4a6a'];
+
+  var active=[];var zeroCount=0,zeroPages=0;
+  for(var i=0;i<ssSorted.length;i++){var d=ssSections[ssSorted[i]];if(d.clicks>0)active.push(ssSorted[i]);else{zeroCount++;zeroPages+=d.pages.length}}
+  var display=active.slice();
+  if(zeroCount>0){ssSections['__zero__']={pages:[],clicks:0,impressions:0,ctrSum:0,posSum:0,otherCount:zeroCount,otherPages:zeroPages};display.push('__zero__')}
+
+  var maxC=0;for(var i=0;i<display.length;i++){var c=ssSections[display[i]].clicks;if(c>maxC)maxC=c}
+  bubbles=[];var minR=24,maxR=Math.min(W,H)*0.18;
+  for(var i=0;i<display.length;i++){
+    var sec=display[i];var d=ssSections[sec];
+    var ratio=maxC>0?Math.sqrt(d.clicks/maxC):0;var r=minR+ratio*(maxR-minR);
+    if(d.clicks===0)r=Math.max(18,minR*0.7);
+    bubbles.push({section:sec,data:d,r:r,x:0,y:0,color:colors[i%colors.length],label:sec==='__zero__'?'Other (0 clicks)':sec});
+  }
+  if(bubbles.length>0){
+    bubbles[0].x=W/2;bubbles[0].y=H/2;
+    for(var i=1;i<bubbles.length;i++){var angle=i*2.4;var dist=bubbles[0].r+bubbles[i].r+30+i*8;bubbles[i].x=W/2+Math.cos(angle)*dist;bubbles[i].y=H/2+Math.sin(angle)*dist}
+    for(var iter=0;iter<120;iter++){
+      for(var i=0;i<bubbles.length;i++){
+        for(var j=i+1;j<bubbles.length;j++){var dx=bubbles[j].x-bubbles[i].x;var dy=bubbles[j].y-bubbles[i].y;var dist=Math.sqrt(dx*dx+dy*dy);var md=bubbles[i].r+bubbles[j].r+14;if(dist<md&&dist>0.1){var push=(md-dist)/2*1.05;var nx=dx/dist;var ny=dy/dist;bubbles[i].x-=nx*push;bubbles[i].y-=ny*push;bubbles[j].x+=nx*push;bubbles[j].y+=ny*push}}
+        bubbles[i].x-=(bubbles[i].x-W/2)*0.008;bubbles[i].y-=(bubbles[i].y-H/2)*0.008;
+        bubbles[i].x=Math.max(bubbles[i].r+8,Math.min(W-bubbles[i].r-8,bubbles[i].x));bubbles[i].y=Math.max(bubbles[i].r+8,Math.min(H-bubbles[i].r-8,bubbles[i].y))}}
+  }
+  ctx.clearRect(0,0,W,H);
+  for(var i=0;i<bubbles.length;i++){
+    var b=bubbles[i];
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=b.color+'18';ctx.fill();ctx.strokeStyle=b.color+'55';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r*0.55,0,Math.PI*2);ctx.fillStyle=b.color+'40';ctx.fill();
+    var fs=b.r>50?13:b.r>35?11:10;ctx.fillStyle=dk?'#e8e4dc':'#1a1710';ctx.font='600 '+fs+'px "DM Sans"';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(b.label.length>18?b.label.slice(0,16)+'...':b.label,b.x,b.y-(b.r>40?12:6));
+    ctx.fillStyle=dk?'#9a9080':'#6a6055';ctx.font='500 '+(fs-2)+'px "DM Sans"';
+    ctx.fillText(fmtNum(b.data.clicks)+' clicks',b.x,b.y+(b.r>40?4:2));
+    if(b.r>35)ctx.fillText(b.data.pages.length+' pages',b.x,b.y+(b.r>40?18:14));
+  }
+}
+
+document.getElementById('bubbleCanvas').addEventListener('click',function(e){
+  var rect=this.getBoundingClientRect();var mx=e.clientX-rect.left;var my=e.clientY-rect.top;
+  for(var i=0;i<bubbles.length;i++){var b=bubbles[i];if((mx-b.x)*(mx-b.x)+(my-b.y)*(my-b.y)<=b.r*b.r){showDetail(b.section);return}}
 });
 
-// ═══════════════════════════════════════
-// PARSERS
-// ═══════════════════════════════════════
-function pDate(v){
-  if(!v)return null;
-  if(typeof v==='number')return new Date((v-25569)*86400000);
-  if(typeof v==='string'){
-    v=v.trim();
-    const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-    if(m){let[,mo,d,y,h,mi,ap]=m;h=+h;if(ap&&ap.toUpperCase()==='PM'&&h!==12)h+=12;if(ap&&ap.toUpperCase()==='AM'&&h===12)h=0;return new Date(+y,+mo-1,+d,h,+mi)}
-    // Try date-only: M/D/YYYY
-    const m2=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if(m2)return new Date(+m2[3],+m2[1]-1,+m2[2]);
-    const d2=new Date(v);if(!isNaN(d2))return d2;
-  }
-  return null;
-}
-function mn(n){
-  if(!n)return n;
-  // 1. Exact match in nameMap
-  if(settings.nameMap[n])return settings.nameMap[n];
-  // 2. Smart match against roster: share first AND last name tokens
-  const parts=n.trim().toLowerCase().split(/\s+/);
-  if(parts.length<2)return n;
-  const first=parts[0],last=parts[parts.length-1];
-  for(const rn of settings.roster){
-    const rp=rn.trim().toLowerCase().split(/\s+/);
-    if(rp.length<2)continue;
-    const rFirst=rp[0],rLast=rp[rp.length-1];
-    if(first===rFirst&&last===rLast)return rn;
-  }
-  return n;
-}
+async function showDetail(section){
+  var d=ssSections[section];if(!d)return;
+  var avgPos=d.pages.length?(d.posSum/d.pages.length).toFixed(1):'0';
+  document.getElementById('detailTitle').textContent=section==='__zero__'?'Other (0 clicks)':section;
+  document.getElementById('detailStats').innerHTML='<span>'+d.pages.length+'</span> pages &middot; <span>'+fmtNum(d.clicks)+'</span> clicks &middot; Avg pos: <span>'+avgPos+'</span>';
 
-function parseSLA(){
-  parsedRows=[];
-  let hI=0;
-  for(let i=0;i<Math.min(slaRaw.length,20);i++){
-    const r=slaRaw[i];if(!r||r.length<6)continue;
-    const j=r.map(c=>String(c).toLowerCase()).join('|');
-    if(j.includes('service')&&(j.includes('field')||j.includes('event'))){hI=i;break}
+  var sorted=d.pages.slice().sort(function(a,b){return b.clicks-a.clicks});
+  var html='';
+  for(var i=0;i<sorted.length&&i<50;i++){
+    var pg=sorted[i];
+    html+='<div class="page-row" data-url="'+escHtml(pg.url)+'"><div class="page-url" title="'+escHtml(pg.url)+'">'+escHtml(truncPath(pg.url))+'</div><div class="page-metric">'+fmtNum(pg.clicks)+'</div><div class="page-metric">'+fmtNum(pg.impressions)+'</div><div class="page-metric">'+(pg.ctr*100).toFixed(1)+'%</div><div class="page-metric">'+pg.position.toFixed(1)+'</div></div>';
   }
-  const h=slaRaw[hI].map(c=>String(c).trim().toLowerCase());
-  const cm={};
-  h.forEach((c,i)=>{
-    if(c.includes('service')&&c.includes('name')&&cm.s===undefined)cm.s=i;
-    else if(c.includes('owner')&&!c.includes('modified')&&cm.o===undefined)cm.o=i;
-    else if((c.includes('modified')||c.includes('changed'))&&cm.m===undefined)cm.m=i;
-    else if((c.includes('field')||c.includes('event'))&&cm.f===undefined)cm.f=i;
-    else if(c.includes('old')&&cm.ov===undefined)cm.ov=i;
-    else if(c.includes('new')&&!c.includes('name')&&cm.nv===undefined)cm.nv=i;
-    else if(c.includes('edit')&&c.includes('date')&&cm.d===undefined)cm.d=i;
-    else if(c.includes('created')&&c.includes('date')&&cm.cd===undefined)cm.cd=i;
-  });
-  // Fallback: find Edit Date separately if not caught
-  if(cm.d===undefined)h.forEach((c,i)=>{if((c.includes('date')||c.includes('edit'))&&i!==cm.cd&&cm.d===undefined)cm.d=i});
-  if(cm.s===undefined)cm.s=0;if(cm.o===undefined)cm.o=1;if(cm.m===undefined)cm.m=2;
-  if(cm.f===undefined)cm.f=3;if(cm.ov===undefined)cm.ov=4;if(cm.nv===undefined)cm.nv=5;if(cm.d===undefined)cm.d=6;
-  for(let i=hI+1;i<slaRaw.length;i++){
-    const r=slaRaw[i];if(!r||!r[cm.s])continue;
-    const row={svc:String(r[cm.s]||'').trim(),own:mn(String(r[cm.o]||'').trim()),mod:mn(String(r[cm.m]||'').trim()),fld:String(r[cm.f]||'').trim(),ov:String(r[cm.ov]||'').trim(),nv:String(r[cm.nv]||'').trim(),dt:pDate(r[cm.d])};
-    if(cm.cd!==undefined)row.createdDate=pDate(r[cm.cd]);
-    parsedRows.push(row);
+  document.getElementById('detailPages').innerHTML=html;
+
+  // Auto-fetch section-level keywords
+  document.getElementById('kwTitle').textContent='Loading keywords for '+section+'...';
+  document.getElementById('kwContainer').innerHTML='<div class="loading-overlay" style="padding:20px"><div class="loading-dots"><div></div><div></div><div></div></div><div class="loading-text" style="font-size:12px">Fetching keywords for this section...</div></div>';
+  document.getElementById('detailKw').classList.remove('hidden');
+  document.getElementById('detailPanel').classList.remove('hidden');
+  document.getElementById('detailPanel').scrollIntoView({behavior:'smooth'});
+
+  try{
+    var queries=await fetchSectionQueries(section);
+    document.getElementById('kwTitle').textContent='Keyword Clusters for '+section+' ('+queries.length+' queries)';
+    renderKwClusters(queries);
+  }catch(e){
+    console.error('[GSCIntel] Section keyword fetch error:',e);
+    document.getElementById('kwContainer').innerHTML='<div style="padding:16px;color:var(--bad)">Could not fetch keywords: '+e.message+'</div>';
   }
 }
 
-function parseT14(wb){
-  launchDates={};t14Status={};
-  for(const sn of wb.SheetNames){
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:''});
-    if(rows.length<2)continue;
-    let hI=0,cAcct=-1,cSvc=-1,cStatus=-1,cDate=-1;
-    for(let i=0;i<Math.min(rows.length,10);i++){
-      const r=rows[i];if(!r)continue;
-      const j=r.map(c=>String(c).toLowerCase()).join('|');
-      if(j.includes('service')&&(j.includes('launch')||j.includes('status'))){
-        hI=i;
-        r.forEach((c,idx)=>{const lc=String(c).toLowerCase();
-          if(lc.includes('account')&&cAcct<0)cAcct=idx;
-          if(lc.includes('service')&&lc.includes('name')&&cSvc<0)cSvc=idx;
-          if(lc.includes('status')&&!lc.includes('mls')&&cStatus<0)cStatus=idx;
-          if(lc.includes('launch')&&lc.includes('date')&&cDate<0)cDate=idx;
-        });break;
-      }
-    }
-    if(cSvc<0)continue;
-    const acctLaunch={},acctT14Status={},seoSvc={};
-    let cur='';
-    for(let i=hI+1;i<rows.length;i++){
-      const r=rows[i];if(!r)continue;
-      const svc=String(r[cSvc]||'').trim();
-      if(!svc||svc.startsWith('Subtotal'))continue;
-      if(cAcct>=0&&r[cAcct]&&String(r[cAcct]).trim()&&!String(r[cAcct]).trim().startsWith('Subtotal'))cur=String(r[cAcct]).trim();
-      if(svc.includes('T-14 Onboarding')||svc.includes('T14')){
-        if(cDate>=0){const d=pDate(r[cDate]);if(d&&cur)acctLaunch[cur]=d}
-        if(cStatus>=0){const st=String(r[cStatus]||'').trim();if(st&&cur)acctT14Status[cur]=st}
-      }
-      if(svc.includes('SEO Migration')&&cur)seoSvc[cur]=svc;
-    }
-    for(const[a,svc]of Object.entries(seoSvc)){
-      if(acctLaunch[a])launchDates[svc]=acctLaunch[a];
-      if(acctT14Status[a])t14Status[svc]=acctT14Status[a];
-    }
-    if(Object.keys(t14Status).length>0)return;
+// Click page row -> fetch keywords for that specific page
+document.getElementById('detailPages').addEventListener('click',async function(e){
+  var row=e.target.closest('.page-row');if(!row)return;
+  var url=row.getAttribute('data-url');if(!url)return;
+  document.querySelectorAll('.page-row').forEach(function(r){r.classList.remove('active')});
+  row.classList.add('active');
+  document.getElementById('kwTitle').textContent='Loading keywords for '+truncPath(url)+'...';
+  document.getElementById('kwContainer').innerHTML='<div class="loading-overlay" style="padding:20px"><div class="loading-dots"><div></div><div></div><div></div></div><div class="loading-text" style="font-size:12px">Fetching page-level keywords...</div></div>';
+  document.getElementById('detailKw').classList.remove('hidden');
+  try{
+    var queries=await fetchPageQueries(url);
+    document.getElementById('kwTitle').textContent='Keywords for '+truncPath(url)+' ('+queries.length+')';
+    renderKwClusters(queries);
+  }catch(err){document.getElementById('kwContainer').innerHTML='<div style="padding:16px;color:var(--bad)">Error: '+err.message+'</div>'}
+});
+
+function renderKwClusters(queries){
+  var stop={'the':1,'a':1,'an':1,'in':1,'on':1,'at':1,'to':1,'for':1,'of':1,'and':1,'or':1,'is':1,'it':1,'by':1,'with':1,'from':1,'as':1,'how':1,'what':1,'do':1,'does':1,'can':1,'i':1,'my':1,'me':1,'you':1,'your':1,'we':1,'our':1,'vs':1,'near':1,'be':1,'are':1,'was':1,'were':1,'this':1,'that':1,'not':1};
+  var clusters={};
+  for(var i=0;i<queries.length;i++){
+    var q=queries[i];var words=q.query.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(function(w){return w.length>2&&!stop[w]});
+    for(var w=0;w<words.length-1;w++){var ph=words[w]+' '+words[w+1];if(!clusters[ph])clusters[ph]={qs:[],clicks:0,impr:0};clusters[ph].qs.push(q);clusters[ph].clicks+=q.clicks;clusters[ph].impr+=q.impressions}
+    for(var w=0;w<words.length;w++){if(!clusters[words[w]])clusters[words[w]]={qs:[],clicks:0,impr:0};clusters[words[w]].qs.push(q);clusters[words[w]].clicks+=q.clicks;clusters[words[w]].impr+=q.impressions}
   }
+  var arr=[];
+  for(var k in clusters){var seen={};var uniq=[];for(var j=0;j<clusters[k].qs.length;j++){var qk=clusters[k].qs[j].query;if(!seen[qk]){seen[qk]=1;uniq.push(clusters[k].qs[j])}}if(uniq.length>=2)arr.push({name:k,qs:uniq,clicks:clusters[k].clicks,impr:clusters[k].impr})}
+  arr.sort(function(a,b){return b.clicks-a.clicks});
+  var multi=arr.filter(function(c){return c.name.indexOf(' ')>=0});
+  var single=arr.filter(function(c){return c.name.indexOf(' ')<0});
+  var fin=[];var used={};
+  for(var i=0;i<multi.length&&fin.length<12;i++){fin.push(multi[i]);for(var j=0;j<multi[i].qs.length;j++)used[multi[i].qs[j].query]=1}
+  for(var i=0;i<single.length&&fin.length<16;i++){var has=false;for(var j=0;j<single[i].qs.length;j++){if(!used[single[i].qs[j].query]){has=true;break}}if(has)fin.push(single[i])}
+
+  var html='';
+  if(!fin.length&&queries.length){
+    // Show flat list if no clusters
+    html='<div style="max-height:300px;overflow-y:auto">';
+    var sorted=queries.slice().sort(function(a,b){return b.clicks-a.clicks});
+    for(var i=0;i<Math.min(sorted.length,30);i++){html+='<div class="kw-row"><div class="kw-name">'+escHtml(sorted[i].query)+'</div><div class="kw-val">'+fmtNum(sorted[i].clicks)+'</div><div class="kw-val">'+fmtNum(sorted[i].impressions)+'</div><div class="kw-val">'+sorted[i].position.toFixed(1)+'</div></div>'}
+    html+='</div>';
+  }
+  for(var i=0;i<fin.length;i++){
+    var c=fin[i];var sq=c.qs.slice().sort(function(a,b){return b.clicks-a.clicks});
+    html+='<div class="kw-cluster"><div class="kw-cluster-header" onclick="this.nextElementSibling.classList.toggle(\'open\')"><div class="kw-cluster-name">'+escHtml(c.name)+' <span class="kw-tag">'+c.qs.length+'</span></div><div class="kw-cluster-stats"><span>'+fmtNum(c.clicks)+'</span> clicks</div></div><div class="kw-cluster-body">';
+    for(var j=0;j<Math.min(sq.length,8);j++)html+='<div class="kw-row"><div class="kw-name">'+escHtml(sq[j].query)+'</div><div class="kw-val">'+fmtNum(sq[j].clicks)+'</div><div class="kw-val">'+fmtNum(sq[j].impressions)+'</div><div class="kw-val">'+sq[j].position.toFixed(1)+'</div></div>';
+    if(sq.length>8)html+='<div class="kw-row" style="color:var(--text3);font-style:italic;justify-content:center">+'+(sq.length-8)+' more</div>';
+    html+='</div></div>';
+  }
+  document.getElementById('kwContainer').innerHTML=html||'<div style="padding:16px;color:var(--text3);text-align:center">No keywords found.</div>';
 }
 
-// ═══════════════════════════════════════
-// CORE ENGINE: Build Service Tracker
-// ═══════════════════════════════════════
-function buildTracker(){
-  // Step 1: Group ALL rows by service
-  const allByService={};
-  parsedRows.forEach(r=>{if(!allByService[r.svc])allByService[r.svc]=[];allByService[r.svc].push(r)});
-  const tracker=[];
-  for(const[svc,allRows]of Object.entries(allByService)){
-    const statusRows=allRows.filter(r=>r.fld==='Status').sort((a,b)=>(b.dt||0)-(a.dt||0));
-    const hasCreated=allRows.some(r=>r.fld==='Created.'||r.fld==='Created');
-    // Determine current status:
-    // - If there are Status change rows → latest new_value = current status
-    // - If Created. event + no Status rows → genuinely "New"
-    // - If NO Created. AND no Status rows → stale service, skip it
-    let status,owner,lastAct,lastModBy;
-    if(statusRows.length){
-      const latest=statusRows[0];
-      status=latest.nv;lastAct=latest.dt;lastModBy=latest.mod;
-      owner=latest.own;
-    }else if(hasCreated){
-      // Check Created Date to filter ghosts: if service was created >60 days ago
-      // and never had a status change, it's likely not genuinely "New"
-      const createdRow=allRows.find(r=>r.fld==='Created.'||r.fld==='Created');
-      const svcCreatedDate=allRows[0].createdDate||null; // From Created Date column
-      const createdEventDate=createdRow?createdRow.dt:null;
-      const refDate=svcCreatedDate||createdEventDate;
-      if(refDate&&(NOW-refDate)>60*24*3600000)continue; // Skip ghost New (>60 days old)
-      status='New';
-      const ownerRow=allRows.find(r=>r.fld==='Owner');
-      owner=ownerRow?ownerRow.nv:allRows[0].own;
-      lastAct=createdEventDate||allRows[0].dt;
-      lastModBy=createdRow?createdRow.mod:allRows[0].mod;
-    }else{
-      continue; // Skip stale services with only Owner/other rows
-    }
-    // Audit SLA: moved TO Audit -> moved FROM Audit (to ANY next status)
-    let auSt=null,auEn=null;
-    const toAu=statusRows.filter(r=>r.nv==='SEO Migration Audit').sort((a,b)=>b.dt-a.dt);
-    const frAu=statusRows.filter(r=>r.ov==='SEO Migration Audit').sort((a,b)=>b.dt-a.dt);
-    if(toAu.length)auSt=toAu[0].dt;
-    if(frAu.length)auEn=frAu[0].dt;
-    let auH=null,auSLA='';
-    if(auSt&&auEn){auH=(auEn-auSt)/36e5;auSLA=auH<=SLA_H?'Within SLA':'SLA Breach'}
-    else if(auSt&&status==='SEO Migration Audit'){auH=(NOW-auSt)/36e5;auSLA=auH<=SLA_H?'On Track':'At Risk'}
-    // If auSt exists but no auEn and NOT currently in Audit → already moved past, no active SLA
-    // Redirect SLA: moved TO Map Redirects -> moved FROM Map Redirects (to ANY next status)
-    let rdSt=null,rdEn=null;
-    const toMR=statusRows.filter(r=>r.nv==='Map Redirects').sort((a,b)=>b.dt-a.dt);
-    const frMR=statusRows.filter(r=>r.ov==='Map Redirects').sort((a,b)=>b.dt-a.dt);
-    if(toMR.length)rdSt=toMR[0].dt;
-    if(frMR.length)rdEn=frMR[0].dt;
-    let rdH=null,rdSLA='';
-    if(rdSt&&rdEn){rdH=(rdEn-rdSt)/36e5;rdSLA=rdH<=SLA_H?'Within SLA':'SLA Breach'}
-    else if(rdSt&&status==='Map Redirects'){rdH=(NOW-rdSt)/36e5;rdSLA=rdH<=SLA_H?'On Track':'At Risk'}
-    // T-14 info
-    const t14St=t14Status[svc]||'';
-    const launch=launchDates[svc]||null;
-    const t14Pri=T14_PRIORITY_MAP[t14St]||0;
-    // Priority calc
-    const nonActionable=['Done','No Migration Needed','Cancelled','Awaiting Domain Redirection','Awaiting Domain Information','On hold','Paused'];
-    let priority='Normal',priSort=5;
-    if(launch&&!nonActionable.includes(status)){priority='Launched';priSort=0}
-    else if((auSLA==='At Risk'||rdSLA==='At Risk')&&!nonActionable.includes(status)){priority='Urgent';priSort=1}
-    else if(lastAct&&(NOW-lastAct)/36e5>48&&!nonActionable.includes(status)){priority='High';priSort=2}
-    else if(lastAct&&(NOW-lastAct)/36e5>24&&!nonActionable.includes(status)){priority='Medium';priSort=3}
-    tracker.push({svc,owner,status,lastAct,lastModBy,auSt,auEn,auH,auSLA,rdSt,rdEn,rdH,rdSLA,t14St,launch,t14Pri,priority,priSort});
-  }
-  return tracker.sort((a,b)=>a.priSort-b.priSort||(b.auH||0)-(a.auH||0));
-}
-
-// ═══════════════════════════════════════
-// MAIN DASHBOARD
-// ═══════════════════════════════════════
-function runDashboard(){
-  const from=new Date(document.getElementById('dateFrom').value+'T00:00:00');
-  const to=new Date(document.getElementById('dateTo').value+'T23:59:59');
-  const tracker=buildTracker();
-  const sRows=parsedRows.filter(r=>r.fld==='Status');
-  const activeStatuses=['SEO Migration Audit','Build Site','Map Redirects','QA Redirects','Implement Redirects'];
-  const terminalStatuses=['Done','No Migration Needed','Cancelled'];
-
-  // Build tabs (Phase 1: Command Center, Due Today, Ready to Audit)
-  // Phase 2 will add: Team Performance, Daily Movement, Service Tracker, Website Launched
-  const tabDefs=[
-    {id:'cmd',label:'Command Center'},
-    {id:'due',label:'Due Today'},
-    {id:'ready',label:'Ready to Audit'},
-    {id:'readymap',label:'Ready to Map'},
-    {id:'exec',label:'Team Performance'},
-    {id:'daily',label:'Daily Movement'},
-    {id:'svc',label:'Service Tracker'},
-    {id:'launch',label:'Website Launched'},
-  ];
-  document.getElementById('mainTabs').innerHTML=tabDefs.map((t,i)=>`<button class="tab${i===0?' active':''}" onclick="switchTab('${t.id}',this)">${t.label}</button>`).join('');
-  document.getElementById('tabContent').innerHTML=tabDefs.map(t=>`<div class="tc${t.id==='cmd'?' active':''}" id="tab-${t.id}"></div>`).join('');
-
-  // ══════════════════════════════════════
-  // TAB 1: COMMAND CENTER
-  // ══════════════════════════════════════
-  const stageCounts={};
-  tracker.forEach(t=>{stageCounts[t.status]=(stageCounts[t.status]||0)+1});
-  const pipeStages=['New','SEO Migration Audit','Build Site','Map Redirects','QA Redirects','Implement Redirects','Awaiting Domain Redirection','Awaiting Domain Information','Done','No Migration Needed','Cancelled'];
-  const pipeColors={New:'gold',['SEO Migration Audit']:'green',['Build Site']:'blue',['Map Redirects']:'orange',['QA Redirects']:'purple',['Implement Redirects']:'purple',['Awaiting Domain Redirection']:'cyan',['Awaiting Domain Information']:'cyan',Done:'green',['No Migration Needed']:'accent',Cancelled:'red'};
-
-  // SLA stats
-  const auDone=tracker.filter(t=>t.auEn);
-  const auOk=auDone.filter(t=>t.auSLA==='Within SLA').length;
-  const auPct=auDone.length?Math.round(auOk/auDone.length*100):0;
-  const rdDone=tracker.filter(t=>t.rdEn);
-  const rdOk=rdDone.filter(t=>t.rdSLA==='Within SLA').length;
-  const rdPct=rdDone.length?Math.round(rdOk/rdDone.length*100):0;
-  const nonActionableStatuses=['Done','No Migration Needed','Cancelled','Awaiting Domain Redirection','Awaiting Domain Information','On hold','Paused'];
-  const atRisk=tracker.filter(t=>(t.auSLA==='At Risk'||t.rdSLA==='At Risk')&&!nonActionableStatuses.includes(t.status)).length;
-  const avgAu=auDone.length?(auDone.reduce((s,t)=>s+t.auH,0)/auDone.length).toFixed(1):'—';
-  const avgRd=rdDone.length?(rdDone.reduce((s,t)=>s+t.rdH,0)/rdDone.length).toFixed(1):'—';
-
-  let cmdH='';
-  // KPI row
-  const gCol=p=>p>=80?'var(--green)':p>=60?'var(--yellow)':'var(--red)';
-  cmdH+=`<div class="kpi-grid">
-    <div class="kpi"><div class="kpi-val" style="color:${gCol(auPct)}">${auPct}%</div><div class="kpi-label">Audit SLA<br>(within 24h)</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${gCol(rdPct)}">${rdPct}%</div><div class="kpi-label">Redirect SLA<br>(within 24h)</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${atRisk?'var(--red)':'var(--green)'}">${atRisk}</div><div class="kpi-label">Active<br>At Risk</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--gold)">${avgAu}h</div><div class="kpi-label">Avg Audit<br>Turnaround</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--gold)">${avgRd}h</div><div class="kpi-label">Avg Redirect<br>Turnaround</div></div>
-  </div>`;
-
-  // Pipeline cards (SF-style big numbers)
-  const sfStages=[
-    {k:'New',label:'New Status'},
-    {k:'SEO Migration Audit',label:'SEO Crawl - Audit'},
-    {k:'Build Site',label:'Build Site'},
-    {k:'Awaiting Domain Redirection',label:'Awaiting Domain'},
-    {k:'Map Redirects',label:'Map Redirect'},
-    {k:'QA Redirects',label:'Ready for QA'},
-    {k:'Implement Redirects',label:'Implement Redirect'},
-    {k:'Done',label:'Done'},
-  ];
-  cmdH+=`<div class="section-hdr">Pipeline</div><div class="pipeline-grid">`;
-  sfStages.forEach(s=>{
-    const c=stageCounts[s.k]||0;
-    const col=pipeColors[s.k]||'accent';
-    cmdH+=`<div class="pipe-card ${col}"><div class="pipe-val">${c}</div><div class="pipe-label">${s.label}</div></div>`;
-  });
-  cmdH+=`</div>`;
-
-  // At Risk table
-  const breaches=tracker.filter(t=>(t.auSLA==='At Risk'||t.rdSLA==='At Risk')&&!nonActionableStatuses.includes(t.status)).sort((a,b)=>{
-    const aH=Math.max(a.auH||0,a.rdH||0);const bH=Math.max(b.auH||0,b.rdH||0);return bH-aH;
-  });
-  if(breaches.length){
-    cmdH+=`<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--red)"></span>Active At Risk<span class="count">${breaches.length}</span></span><button class="btn-sm" onclick="copyT('cmdBreach')">Copy</button></div><div class="tw"><table id="cmdBreach"><thead><tr><th>Service</th><th>Stage</th><th>Type</th><th>Hours</th><th>SLA</th><th>Last Modified By</th></tr></thead><tbody>`;
-    breaches.forEach(t=>{
-      const isAuRisk=t.auSLA==='At Risk';
-      const type=isAuRisk?'Audit':'Redirect';
-      const hrs=isAuRisk?t.auH:t.rdH;
-      cmdH+=`<tr><td>${t.svc}</td><td class="hv">${t.status}</td><td class="hv">${type}</td><td class="hv" style="color:var(--red)">${hrs?hrs.toFixed(1)+'h':''}</td><td class="sla-risk">At Risk</td><td class="hv">${t.lastModBy}</td></tr>`;
-    });
-    cmdH+=`</tbody></table></div></div>`;
-  }
-  document.getElementById('tab-cmd').innerHTML=cmdH;
-
-  // ══════════════════════════════════════
-  // TAB 2: DUE TODAY (service-level queue)
-  // ══════════════════════════════════════
-  const actionable=tracker.filter(t=>activeStatuses.includes(t.status));
-  // Sort: Launched first, then At Risk, then by T-14 priority, then by hours in stage
-  actionable.sort((a,b)=>{
-    if(a.priSort!==b.priSort)return a.priSort-b.priSort;
-    if(b.t14Pri!==a.t14Pri)return b.t14Pri-a.t14Pri;
-    return(b.auH||b.rdH||0)-(a.auH||a.rdH||0);
-  });
-
-  // KPIs
-  const dueCounts={};activeStatuses.forEach(s=>{dueCounts[s]=actionable.filter(t=>t.status===s).length});
-  let dueH=`<div class="kpi-grid">`;
-  activeStatuses.forEach(s=>{
-    const short=s.replace('SEO Migration ','').replace('Implement ','Impl ');
-    dueH+=`<div class="kpi"><div class="kpi-val" style="color:var(--gold)">${dueCounts[s]}</div><div class="kpi-label">${short}</div></div>`;
-  });
-  dueH+=`<div class="kpi"><div class="kpi-val" style="color:var(--red)">${atRisk}</div><div class="kpi-label">At Risk</div></div>`;
-  dueH+=`<div class="kpi"><div class="kpi-val" style="color:var(--green)">${actionable.length}</div><div class="kpi-label">Total Active</div></div></div>`;
-
-  // Service list
-  dueH+=`<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--gold)"></span>Active Services<span class="count">${actionable.length}</span></span><button class="btn-sm" onclick="copyT('dueTable')">Copy</button></div><div class="tw"><table id="dueTable"><thead><tr><th>Service</th><th>Status</th><th>Audit Hrs</th><th>Audit SLA</th><th>Redir Hrs</th><th>Redir SLA</th><th>T-14 Status</th><th>Priority</th></tr></thead><tbody>`;
-  actionable.forEach(t=>{
-    const priCls=t.priority==='Launched'?'pri-esc':t.priority==='Urgent'?'pri-urgent':t.priority==='High'?'pri-high':t.priority==='Medium'?'pri-med':'pri-low';
-    const t14Cls=t.t14Pri>=4?'style="color:var(--orange)"':t.t14Pri>=2?'style="color:var(--yellow)"':'';
-    dueH+=`<tr><td>${t.svc}</td><td class="hv">${t.status}</td><td class="hv">${t.auH!=null?t.auH.toFixed(1):''}</td><td class="${slaC(t.auSLA)}">${t.auSLA}</td><td class="hv">${t.rdH!=null?t.rdH.toFixed(1):''}</td><td class="${slaC(t.rdSLA)}">${t.rdSLA}</td><td class="hv" ${t14Cls}>${t.t14St}</td><td class="${priCls}">${t.priority==='Launched'?'🔴 Launched':t.priority}</td></tr>`;
-  });
-  dueH+=`</tbody></table></div></div>`;
-  document.getElementById('tab-due').innerHTML=dueH;
-
-  // ══════════════════════════════════════
-  // TAB 3: READY TO AUDIT
-  // ══════════════════════════════════════
-  const newSvcs=tracker.filter(t=>t.status==='New');
-  const t14MinIdx=T14_ORDER.indexOf(T14_READY_MIN);
-  const readyToAudit=newSvcs.filter(t=>{
-    const st=t.t14St;if(!st)return false;
-    const idx=T14_ORDER.indexOf(st);
-    return idx>=t14MinIdx&&idx<=T14_ORDER.indexOf('Website Launched');
-  }).sort((a,b)=>(b.t14Pri||0)-(a.t14Pri||0));
-  const notReady=newSvcs.filter(t=>!readyToAudit.includes(t));
-
-  let rdyH=`<div class="kpi-grid">
-    <div class="kpi green"><div class="kpi-val">${readyToAudit.length}</div><div class="kpi-label">Ready to Audit<br>(Domain Validated)</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--text-dim)">${notReady.length}</div><div class="kpi-label">Not Ready<br>(Awaiting T-14)</div></div>
-    <div class="kpi accent"><div class="kpi-val">${newSvcs.length}</div><div class="kpi-label">Total in<br>New Status</div></div>
-  </div>`;
-
-  if(readyToAudit.length){
-    rdyH+=`<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--green)"></span>Ready to Audit — Domain Validated<span class="count">${readyToAudit.length}</span></span><button class="btn-sm" onclick="copyT('rdyTable')">Copy</button></div><div class="tw"><table id="rdyTable"><thead><tr><th>Service</th><th>Owner</th><th>T-14 Status</th><th>T-14 Priority</th><th>Launch Date</th><th>Created</th></tr></thead><tbody>`;
-    readyToAudit.forEach(t=>{
-      const priLabel=t.t14Pri>=4?'🔴 Urgent':t.t14Pri>=3?'🟠 High':t.t14Pri>=2?'🟡 Medium':'🟢 Normal';
-      rdyH+=`<tr><td>${t.svc}</td><td class="hv">${t.owner}</td><td class="hv">${t.t14St}</td><td class="hv">${priLabel}</td><td class="hv">${t.launch?fmtDate(t.launch):''}</td><td class="hv">${fmtDt(t.lastAct)}</td></tr>`;
-    });
-    rdyH+=`</tbody></table></div></div>`;
-  }
-
-  if(notReady.length){
-    rdyH+=`<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--text-dim)"></span>Not Ready — Awaiting Domain Validation<span class="count">${notReady.length}</span></span><button class="btn-sm" onclick="copyT('notRdyTable')">Copy</button></div><div class="tw"><table id="notRdyTable"><thead><tr><th>Service</th><th>Owner</th><th>T-14 Status</th><th>Created</th></tr></thead><tbody>`;
-    notReady.forEach(t=>{
-      rdyH+=`<tr><td>${t.svc}</td><td class="hv">${t.owner}</td><td class="hv">${t.t14St||'No T-14 data'}</td><td class="hv">${fmtDt(t.lastAct)}</td></tr>`;
-    });
-    rdyH+=`</tbody></table></div></div>`;
-  }
-  document.getElementById('tab-ready').innerHTML=rdyH;
-
-  // ══════════════════════════════════════
-  // TAB 3b: READY TO MAP
-  // ══════════════════════════════════════
-  // Services still in New / SEO Migration Audit / Build Site
-  // but T-14 is already at Website Updates Complete, QAs + Launch, or Website Launched
-  const preMapStatuses=['New','SEO Migration Audit','Build Site'];
-  const t14MapReady=['Website Updates Complete','QAs + Launch','Website Launched'];
-  const readyToMap=tracker.filter(t=>{
-    return preMapStatuses.includes(t.status)&&t14MapReady.includes(t.t14St);
-  });
-  // Sort: Website Launched first (most urgent), then QAs + Launch, then Updates Complete
-  const t14MapOrder={'Website Launched':0,'QAs + Launch':1,'Website Updates Complete':2};
-  readyToMap.sort((a,b)=>{
-    const diff=(t14MapOrder[a.t14St]??9)-(t14MapOrder[b.t14St]??9);
-    if(diff!==0)return diff;
-    return(b.t14Pri||0)-(a.t14Pri||0);
-  });
-
-  // Split by urgency
-  const mapLaunched=readyToMap.filter(t=>t.t14St==='Website Launched');
-  const mapQA=readyToMap.filter(t=>t.t14St==='QAs + Launch');
-  const mapUpdates=readyToMap.filter(t=>t.t14St==='Website Updates Complete');
-
-  let mapH=`<div class="kpi-grid">
-    <div class="kpi red"><div class="kpi-val">${mapLaunched.length}</div><div class="kpi-label">T-14: Launched<br>(Urgent)</div></div>
-    <div class="kpi orange"><div class="kpi-val">${mapQA.length}</div><div class="kpi-label">T-14: QAs + Launch<br>(High)</div></div>
-    <div class="kpi accent"><div class="kpi-val">${mapUpdates.length}</div><div class="kpi-label">T-14: Updates Complete<br>(Ready)</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--gold)">${readyToMap.length}</div><div class="kpi-label">Total<br>Ready to Map</div></div>
-  </div>`;
-
-  if(readyToMap.length){
-    mapH+=`<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--orange)"></span>Ready to Map — Website Ahead of Migration<span class="count">${readyToMap.length}</span></span><button class="btn-sm" onclick="copyT('readyMapTable')">Copy</button></div><div class="tw"><table id="readyMapTable"><thead><tr><th>Service</th><th>Migration Status</th><th>T-14 Status</th><th>Owner</th><th>Launch Date</th><th>Audit SLA</th><th>Last Modified By</th></tr></thead><tbody>`;
-    readyToMap.forEach(t=>{
-      const t14Cls=t.t14St==='Website Launched'?'style="color:var(--red);font-weight:600"':t.t14St==='QAs + Launch'?'style="color:var(--orange)"':'style="color:var(--gold)"';
-      const statusBadge=t.status==='New'?'badge-gold':t.status==='SEO Migration Audit'?'badge-green':'badge-blue';
-      mapH+=`<tr><td>${t.svc}</td><td><span class="badge ${statusBadge}">${t.status.replace('SEO Migration ','')}</span></td><td class="hv" ${t14Cls}>${t.t14St}</td><td class="hv">${t.owner||''}</td><td class="hv">${t.launch?fmtDate(t.launch):''}</td><td class="${slaC(t.auSLA)}">${t.auSLA||'—'}</td><td class="hv">${t.lastModBy||''}</td></tr>`;
-    });
-    mapH+=`</tbody></table></div></div>`;
-  }else{
-    mapH+=`<div class="empty"><p>No services ready to map — all caught up</p></div>`;
-  }
-  document.getElementById('tab-readymap').innerHTML=mapH;
-
-  // ══════════════════════════════════════
-  // TAB 4: TEAM PERFORMANCE
-  // ══════════════════════════════════════
-  buildTeamPerformance(tracker, sRows, from, to);
-
-  // ══════════════════════════════════════
-  // TAB 5: DAILY MOVEMENT
-  // ══════════════════════════════════════
-  buildDailyMovement(sRows, from, to);
-
-  // ══════════════════════════════════════
-  // TAB 6: SERVICE TRACKER
-  // ══════════════════════════════════════
-  buildServiceTracker(tracker);
-
-  // ══════════════════════════════════════
-  // TAB 7: WEBSITE LAUNCHED
-  // ══════════════════════════════════════
-  buildWebsiteLaunched(tracker);
-
-  document.getElementById('results').style.display='block';
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('dateControls').style.display='flex';
-  toast(`Dashboard: ${tracker.length} services`);
-  // Save to Firebase if admin
-  if(isAdmin&&fbReady)saveToFirebase();
-}
-
-// ═══════════════════════════════════════
-// PHASE 2: TEAM PERFORMANCE
-// ═══════════════════════════════════════
-function buildTeamPerformance(tracker, sRows, from, to) {
-  // All audit completions (any move FROM Audit) and redirect completions (any move FROM Map Redirects)
-  const allAuditMoves = sRows.filter(r => r.ov === 'SEO Migration Audit' && r.dt);
-  const allRedirMoves = sRows.filter(r => r.ov === 'Map Redirects' && r.dt);
-
-  // Date-range filtered
-  const dateFiltered = sRows.filter(r => r.dt && r.dt >= from && r.dt <= to);
-  const auditMoves = allAuditMoves.filter(r => r.dt >= from && r.dt <= to);
-  const redirMoves = allRedirMoves.filter(r => r.dt >= from && r.dt <= to);
-
-  // Time window helpers
-  const todayStart = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
-  const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-  const last7Start = new Date(todayStart); last7Start.setDate(last7Start.getDate() - 7);
-  const monthStart = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
-
-  function countInRange(moves, name, start, end) {
-    return moves.filter(r => r.mod === name && r.dt >= start && r.dt < end).length;
-  }
-
-  // Only include team members from settings roster
-  const people = settings.roster.filter(n => n.trim());
-
-  const teamData = [];
-  people.forEach(name => {
-    const myAudit = auditMoves.filter(r => r.mod === name);
-    const myRedir = redirMoves.filter(r => r.mod === name);
-
-    // Productivity time windows (using ALL data, not date-range filtered)
-    const auToday = countInRange(allAuditMoves, name, todayStart, NOW);
-    const auYesterday = countInRange(allAuditMoves, name, yesterdayStart, todayStart);
-    const auLast7 = countInRange(allAuditMoves, name, last7Start, NOW);
-    const auMonth = countInRange(allAuditMoves, name, monthStart, NOW);
-    const rdToday = countInRange(allRedirMoves, name, todayStart, NOW);
-    const rdYesterday = countInRange(allRedirMoves, name, yesterdayStart, todayStart);
-    const rdLast7 = countInRange(allRedirMoves, name, last7Start, NOW);
-    const rdMonth = countInRange(allRedirMoves, name, monthStart, NOW);
-
-    // Compute SLA adherence for date-range completions
-    let auSLAOk = 0, auSLABreach = 0;
-    myAudit.forEach(mv => {
-      const entries = sRows.filter(r => r.svc === mv.svc && r.nv === 'SEO Migration Audit' && r.dt && r.dt < mv.dt).sort((a, b) => b.dt - a.dt);
-      if (entries.length) {
-        const hrs = (mv.dt - entries[0].dt) / 36e5;
-        if (hrs <= SLA_H) auSLAOk++; else auSLABreach++;
-      } else { auSLAOk++; }
-    });
-
-    let rdSLAOk = 0, rdSLABreach = 0;
-    myRedir.forEach(mv => {
-      const entries = sRows.filter(r => r.svc === mv.svc && r.nv === 'Map Redirects' && r.dt && r.dt < mv.dt).sort((a, b) => b.dt - a.dt);
-      if (entries.length) {
-        const hrs = (mv.dt - entries[0].dt) / 36e5;
-        if (hrs <= SLA_H) rdSLAOk++; else rdSLABreach++;
-      } else { rdSLAOk++; }
-    });
-
-    // Avg turnaround
-    let auTurns = [], rdTurns = [];
-    myAudit.forEach(mv => {
-      const entries = sRows.filter(r => r.svc === mv.svc && r.nv === 'SEO Migration Audit' && r.dt && r.dt < mv.dt).sort((a, b) => b.dt - a.dt);
-      if (entries.length) auTurns.push((mv.dt - entries[0].dt) / 36e5);
-    });
-    myRedir.forEach(mv => {
-      const entries = sRows.filter(r => r.svc === mv.svc && r.nv === 'Map Redirects' && r.dt && r.dt < mv.dt).sort((a, b) => b.dt - a.dt);
-      if (entries.length) rdTurns.push((mv.dt - entries[0].dt) / 36e5);
-    });
-
-    const avgAu = auTurns.length ? (auTurns.reduce((s, v) => s + v, 0) / auTurns.length) : null;
-    const avgRd = rdTurns.length ? (rdTurns.reduce((s, v) => s + v, 0) / rdTurns.length) : null;
-
-    // Active services currently assigned
-    const activeOwned = tracker.filter(t => t.owner === name && !['Done', 'No Migration Needed', 'Cancelled'].includes(t.status));
-
-    teamData.push({
-      name,
-      auditsCompleted: myAudit.length, redirsCompleted: myRedir.length,
-      auSLAOk, auSLABreach, rdSLAOk, rdSLABreach,
-      avgAu, avgRd, activeOwned,
-      auditDetails: myAudit, redirDetails: myRedir,
-      auToday, auYesterday, auLast7, auMonth,
-      rdToday, rdYesterday, rdLast7, rdMonth
-    });
-  });
-
-  // Sort: most total completions first
-  teamData.sort((a, b) => (b.auditsCompleted + b.redirsCompleted) - (a.auditsCompleted + a.redirsCompleted));
-
-  // Aggregate KPIs
-  const totalAudits = teamData.reduce((s, p) => s + p.auditsCompleted, 0);
-  const totalRedirs = teamData.reduce((s, p) => s + p.redirsCompleted, 0);
-  const totalAuOk = teamData.reduce((s, p) => s + p.auSLAOk, 0);
-  const totalAuBr = teamData.reduce((s, p) => s + p.auSLABreach, 0);
-  const totalRdOk = teamData.reduce((s, p) => s + p.rdSLAOk, 0);
-  const totalRdBr = teamData.reduce((s, p) => s + p.rdSLABreach, 0);
-  const auPctTeam = (totalAuOk + totalAuBr) > 0 ? Math.round(totalAuOk / (totalAuOk + totalAuBr) * 100) : 0;
-  const rdPctTeam = (totalRdOk + totalRdBr) > 0 ? Math.round(totalRdOk / (totalRdOk + totalRdBr) * 100) : 0;
-  const gCol = p => p >= 80 ? 'var(--green)' : p >= 60 ? 'var(--yellow)' : 'var(--red)';
-
-  let h = `<div class="kpi-grid">
-    <div class="kpi accent"><div class="kpi-val">${totalAudits}</div><div class="kpi-label">Audits<br>Completed</div></div>
-    <div class="kpi accent"><div class="kpi-val">${totalRedirs}</div><div class="kpi-label">Redirects<br>Completed</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${gCol(auPctTeam)}">${auPctTeam}%</div><div class="kpi-label">Team Audit<br>SLA Rate</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:${gCol(rdPctTeam)}">${rdPctTeam}%</div><div class="kpi-label">Team Redirect<br>SLA Rate</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--gold)">${totalAudits + totalRedirs}</div><div class="kpi-label">Total<br>Completed</div></div>
-  </div>`;
-
-  // Team cards
-  h += `<div class="section-hdr">Individual Performance</div>`;
-  h += `<div class="team-grid" id="teamGrid">`;
-  teamData.forEach((p, idx) => {
-    const auTotal = p.auSLAOk + p.auSLABreach;
-    const rdTotal = p.rdSLAOk + p.rdSLABreach;
-    const auPct = auTotal ? Math.round(p.auSLAOk / auTotal * 100) : 0;
-    const rdPct = rdTotal ? Math.round(p.rdSLAOk / rdTotal * 100) : 0;
-    const firstName = p.name.split(' ')[0];
-
-    h += `<div class="team-card" id="tc${idx}" onclick="toggleTeamCard(${idx})">`;
-    h += `<div class="tc-name"><span>${firstName}</span><span class="chevron">▶</span></div>`;
-    h += `<div class="tc-stats" style="grid-template-columns:repeat(2,1fr)">`;
-    h += `<div class="tc-stat"><div class="val" style="color:var(--green)">${p.auditsCompleted}</div><div class="lbl">Audits</div></div>`;
-    h += `<div class="tc-stat"><div class="val" style="color:var(--orange)">${p.redirsCompleted}</div><div class="lbl">Redirects</div></div>`;
-    h += `</div>`;
-
-    // Productivity score cards
-    h += `<div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px">`;
-    // Yesterday
-    h += `<div style="background:var(--surface-2);border-radius:5px;padding:8px 6px;text-align:center">`;
-    h += `<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:4px">Yesterday</div>`;
-    h += `<div style="display:flex;justify-content:center;gap:8px">`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--green);line-height:1">${p.auYesterday||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Audit</div></div>`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--orange);line-height:1">${p.rdYesterday||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Redir</div></div>`;
-    h += `</div></div>`;
-    // Today
-    h += `<div style="background:var(--surface-2);border-radius:5px;padding:8px 6px;text-align:center">`;
-    h += `<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:4px">Today</div>`;
-    h += `<div style="display:flex;justify-content:center;gap:8px">`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--green);line-height:1">${p.auToday||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Audit</div></div>`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--orange);line-height:1">${p.rdToday||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Redir</div></div>`;
-    h += `</div></div>`;
-    // Last 7 Days
-    h += `<div style="background:var(--surface-2);border-radius:5px;padding:8px 6px;text-align:center">`;
-    h += `<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:4px">Last 7D</div>`;
-    h += `<div style="display:flex;justify-content:center;gap:8px">`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--green);line-height:1">${p.auLast7||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Audit</div></div>`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--orange);line-height:1">${p.rdLast7||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Redir</div></div>`;
-    h += `</div></div>`;
-    // Month to Date
-    h += `<div style="background:var(--surface-2);border-radius:5px;padding:8px 6px;text-align:center">`;
-    h += `<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:4px">MTD</div>`;
-    h += `<div style="display:flex;justify-content:center;gap:8px">`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--green);line-height:1">${p.auMonth||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Audit</div></div>`;
-    h += `<div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--orange);line-height:1">${p.rdMonth||0}</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px">Redir</div></div>`;
-    h += `</div></div>`;
-    h += `</div>`;
-
-    // SLA mini bars
-    if (auTotal || rdTotal) {
-      h += `<div style="display:flex;gap:12px;font-size:9px;color:var(--text-dim);margin-top:6px">`;
-      if (auTotal) {
-        h += `<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>Audit SLA</span><span style="color:${gCol(auPct)}">${auPct}%</span></div>`;
-        h += `<div class="tc-sla-bar">`;
-        for (let i = 0; i < p.auSLAOk; i++) h += `<span style="background:var(--green)"></span>`;
-        for (let i = 0; i < p.auSLABreach; i++) h += `<span style="background:var(--red)"></span>`;
-        h += `</div></div>`;
-      }
-      if (rdTotal) {
-        h += `<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>Redir SLA</span><span style="color:${gCol(rdPct)}">${rdPct}%</span></div>`;
-        h += `<div class="tc-sla-bar">`;
-        for (let i = 0; i < p.rdSLAOk; i++) h += `<span style="background:var(--green)"></span>`;
-        for (let i = 0; i < p.rdSLABreach; i++) h += `<span style="background:var(--red)"></span>`;
-        h += `</div></div>`;
-      }
-      h += `</div>`;
-    }
-
-    // Avg turnaround
-    if (p.avgAu !== null || p.avgRd !== null) {
-      h += `<div style="display:flex;gap:12px;font-size:9px;color:var(--text-dim);margin-top:6px">`;
-      if (p.avgAu !== null) h += `<span>Avg Audit: <span style="color:${p.avgAu <= SLA_H ? 'var(--green)' : 'var(--red)'}">${p.avgAu.toFixed(1)}h</span></span>`;
-      if (p.avgRd !== null) h += `<span>Avg Redir: <span style="color:${p.avgRd <= SLA_H ? 'var(--green)' : 'var(--red)'}">${p.avgRd.toFixed(1)}h</span></span>`;
-      h += `</div>`;
-    }
-
-    // Drill-down detail (hidden by default)
-    h += `<div class="tc-detail">`;
-    const recentWork = [...p.auditDetails.map(r => ({...r, type: 'Audit'})), ...p.redirDetails.map(r => ({...r, type: 'Redirect'}))].sort((a, b) => (b.dt || 0) - (a.dt || 0)).slice(0, 15);
-    if (recentWork.length) {
-      h += `<div style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);font-weight:600;margin-bottom:6px">Recent Completions</div>`;
-      h += `<table><thead><tr><th>Service</th><th>Type</th><th>Date</th></tr></thead><tbody>`;
-      recentWork.forEach(r => {
-        const typeBadge = r.type === 'Audit' ? 'badge-green' : 'badge-orange';
-        h += `<tr><td>${r.svc}</td><td><span class="badge ${typeBadge}">${r.type}</span></td><td class="hv">${fmtDt(r.dt)}</td></tr>`;
-      });
-      h += `</tbody></table>`;
-    }
-    h += `</div>`; // end tc-detail
-    h += `</div>`; // end team-card
-  });
-  h += `</div>`; // end team-grid
-
-  // Summary table with productivity columns
-  h += `<div class="section-hdr">Team Summary</div>`;
-  h += `<p style="font-size:10px;color:var(--text-dim);margin-bottom:8px">Audits / Redirects completed columns use date range. YTD/TOD/7D/MTD are always live.</p>`;
-  h += `<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--gold)"></span>Summary<span class="count">${teamData.length}</span></span><button class="btn-sm" onclick="copyT('teamSummaryTable')">Copy</button></div><div class="tw"><table id="teamSummaryTable"><thead><tr><th>Team Member</th><th>Audits</th><th>Redirects</th><th>Au SLA%</th><th>Rd SLA%</th><th>Au Yesterday</th><th>Au Today</th><th>Au 7D</th><th>Au MTD</th><th>Rd Yesterday</th><th>Rd Today</th><th>Rd 7D</th><th>Rd MTD</th></tr></thead><tbody>`;
-  teamData.forEach(p => {
-    const auTotal = p.auSLAOk + p.auSLABreach;
-    const rdTotal = p.rdSLAOk + p.rdSLABreach;
-    const auPct = auTotal ? Math.round(p.auSLAOk / auTotal * 100) + '%' : '—';
-    const rdPct = rdTotal ? Math.round(p.rdSLAOk / rdTotal * 100) + '%' : '—';
-    h += `<tr><td>${p.name}</td><td class="hv">${p.auditsCompleted}</td><td class="hv">${p.redirsCompleted}</td><td class="hv">${auPct}</td><td class="hv">${rdPct}</td><td class="hv">${p.auYesterday||''}</td><td class="hv">${p.auToday||''}</td><td class="hv">${p.auLast7||''}</td><td class="hv">${p.auMonth||''}</td><td class="hv">${p.rdYesterday||''}</td><td class="hv">${p.rdToday||''}</td><td class="hv">${p.rdLast7||''}</td><td class="hv">${p.rdMonth||''}</td></tr>`;
-  });
-  // Total row
-  h += `<tr class="total-row"><td>TOTAL</td><td>${totalAudits}</td><td>${totalRedirs}</td><td>${auPctTeam}%</td><td>${rdPctTeam}%</td><td>${teamData.reduce((s,p)=>s+p.auYesterday,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.auToday,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.auLast7,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.auMonth,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.rdYesterday,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.rdToday,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.rdLast7,0)||''}</td><td>${teamData.reduce((s,p)=>s+p.rdMonth,0)||''}</td></tr>`;
-  h += `</tbody></table></div></div>`;
-
-  document.getElementById('tab-exec').innerHTML = h;
-}
-
-function toggleTeamCard(idx) {
-  const card = document.getElementById('tc' + idx);
-  if (card) card.classList.toggle('expanded');
-}
-
-// ═══════════════════════════════════════
-// PHASE 2: DAILY MOVEMENT
-// ═══════════════════════════════════════
-function buildDailyMovement(sRows, from, to) {
-  const dateFiltered = sRows.filter(r => r.dt && r.dt >= from && r.dt <= to);
-
-  // Audit→Build: any move FROM Audit
-  const auditMoves = dateFiltered.filter(r => r.ov === 'SEO Migration Audit');
-  // MapRedirects→Done: any move FROM Map Redirects
-  const redirMoves = dateFiltered.filter(r => r.ov === 'Map Redirects');
-
-  // Build date columns (every day in range)
-  const dates = [];
-  const d = new Date(from);
-  while (d <= to) {
-    dates.push(new Date(d));
-    d.setDate(d.getDate() + 1);
-  }
-
-  // Collect all people who made moves
-  const rosterSet = new Set(settings.roster.map(n => n.trim().toLowerCase()));
-  const isRoster = name => rosterSet.has((name||'').trim().toLowerCase());
-  const auPeople = [...new Set(auditMoves.map(r => r.mod).filter(Boolean))].filter(isRoster).sort();
-  const rdPeople = [...new Set(redirMoves.map(r => r.mod).filter(Boolean))].filter(isRoster).sort();
-
-  function dateKey(dt) { return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`; }
-
-  function buildGrid(moves, people, label, dotColor, tableId) {
-    // Build lookup: person → dateKey → count
-    const grid = {};
-    people.forEach(p => { grid[p] = {}; });
-    moves.forEach(r => {
-      if (!r.mod || !r.dt) return;
-      const dk = dateKey(r.dt);
-      if (!grid[r.mod]) grid[r.mod] = {};
-      grid[r.mod][dk] = (grid[r.mod][dk] || 0) + 1;
-    });
-
-    // Date totals
-    const dateTotals = {};
-    dates.forEach(d => {
-      const dk = dateKey(d);
-      dateTotals[dk] = moves.filter(r => r.dt && dateKey(r.dt) === dk).length;
-    });
-
-    // Month names for headers
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    let h = `<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:${dotColor}"></span>${label}<span class="count">${moves.length} total</span></span><button class="btn-sm" onclick="copyT('${tableId}')">Copy</button></div><div class="tw"><table id="${tableId}"><thead><tr><th style="min-width:140px">Team Member</th>`;
-    dates.forEach(d => {
-      h += `<th>${monthNames[d.getMonth()]} ${d.getDate()}</th>`;
-    });
-    h += `</tr></thead><tbody>`;
-
-    // TOTAL row first
-    h += `<tr class="total-row"><td><strong>TOTAL</strong></td>`;
-    dates.forEach(d => {
-      const v = dateTotals[dateKey(d)] || 0;
-      h += `<td class="hv" style="font-weight:700;${v ? 'color:var(--text)' : ''}">${v || ''}</td>`;
-    });
-    h += `</tr>`;
-
-    // Person rows
-    people.forEach(name => {
-      h += `<tr><td>${name}</td>`;
-      dates.forEach(d => {
-        const v = (grid[name] || {})[dateKey(d)] || 0;
-        h += `<td class="hv">${v || ''}</td>`;
-      });
-      h += `</tr>`;
-    });
-
-    h += `</tbody></table></div></div>`;
-    return h;
-  }
-
-  // KPIs
-  const gCol = p => p >= 80 ? 'var(--green)' : p >= 60 ? 'var(--yellow)' : 'var(--red)';
-  let h = `<div class="kpi-grid">
-    <div class="kpi green"><div class="kpi-val">${auditMoves.length}</div><div class="kpi-label">Audit → Build<br>Transitions</div></div>
-    <div class="kpi orange"><div class="kpi-val">${redirMoves.length}</div><div class="kpi-label">Map Redir → Done<br>Transitions</div></div>
-    <div class="kpi accent"><div class="kpi-val">${auditMoves.length + redirMoves.length}</div><div class="kpi-label">Total<br>Movements</div></div>
-  </div>`;
-
-  // Grids
-  h += buildGrid(auditMoves, auPeople, 'SEO Migration Audit → Build Site', 'var(--green)', 'mvAuditGrid');
-  h += buildGrid(redirMoves, rdPeople, 'Map Redirects → Done', 'var(--orange)', 'mvRedirGrid');
-
-  document.getElementById('tab-daily').innerHTML = h;
-}
-
-// ═══════════════════════════════════════
-// PHASE 2: SERVICE TRACKER
-// ═══════════════════════════════════════
-function buildServiceTracker(tracker) {
-  // Collect unique statuses and owners for filters
-  const statuses = [...new Set(tracker.map(t => t.status))].sort();
-  const owners = [...new Set(tracker.map(t => t.owner).filter(Boolean))].sort();
-
-  // Store tracker globally for filtering
-  window._svcTracker = tracker;
-
-  let h = '';
-  h += `<div class="filter-row">`;
-  h += `<select id="svcFilterStatus" onchange="filterServiceTracker()"><option value="">All Statuses</option>${statuses.map(s => `<option value="${s}">${s}</option>`).join('')}</select>`;
-  h += `<select id="svcFilterOwner" onchange="filterServiceTracker()"><option value="">All Owners</option>${owners.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
-  h += `<select id="svcFilterSLA" onchange="filterServiceTracker()"><option value="">All SLA</option><option value="breach">SLA Breach / At Risk</option><option value="ok">Within SLA / On Track</option></select>`;
-  h += `<input type="text" id="svcSearch" placeholder="Search services…" oninput="filterServiceTracker()">`;
-  h += `</div>`;
-
-  h += `<div id="svcTableWrap"></div>`;
-  document.getElementById('tab-svc').innerHTML = h;
-  filterServiceTracker(); // Initial render
-}
-
-function filterServiceTracker() {
-  const tracker = window._svcTracker || [];
-  const statusF = document.getElementById('svcFilterStatus')?.value || '';
-  const ownerF = document.getElementById('svcFilterOwner')?.value || '';
-  const slaF = document.getElementById('svcFilterSLA')?.value || '';
-  const searchF = (document.getElementById('svcSearch')?.value || '').toLowerCase();
-
-  let filtered = tracker;
-  if (statusF) filtered = filtered.filter(t => t.status === statusF);
-  if (ownerF) filtered = filtered.filter(t => t.owner === ownerF);
-  if (slaF === 'breach') filtered = filtered.filter(t => t.auSLA === 'SLA Breach' || t.auSLA === 'At Risk' || t.rdSLA === 'SLA Breach' || t.rdSLA === 'At Risk');
-  if (slaF === 'ok') filtered = filtered.filter(t => t.auSLA === 'Within SLA' || t.auSLA === 'On Track' || t.rdSLA === 'Within SLA' || t.rdSLA === 'On Track');
-  if (searchF) filtered = filtered.filter(t => t.svc.toLowerCase().includes(searchF) || (t.owner || '').toLowerCase().includes(searchF));
-
-  const statusBadge = s => {
-    const map = {
-      'New': 'badge-gold', 'SEO Migration Audit': 'badge-green', 'Build Site': 'badge-blue',
-      'Map Redirects': 'badge-orange', 'QA Redirects': 'badge-purple', 'Implement Redirects': 'badge-purple',
-      'Awaiting Domain Redirection': 'badge-cyan', 'Awaiting Domain Information': 'badge-cyan',
-      'Done': 'badge-green', 'No Migration Needed': 'badge-gold', 'Cancelled': 'badge-red'
-    };
-    return map[s] || 'badge-gold';
-  };
-
-  let h = `<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--gold)"></span>All Services<span class="count">${filtered.length} of ${tracker.length}</span></span><button class="btn-sm" onclick="copyT('svcFullTable')">Copy</button></div><div class="tw"><table id="svcFullTable"><thead><tr><th>Service</th><th>Owner</th><th>Status</th><th>Audit Hrs</th><th>Audit SLA</th><th>Redir Hrs</th><th>Redir SLA</th><th>T-14</th><th>Launch Date</th><th>Priority</th><th>Last Modified</th></tr></thead><tbody>`;
-
-  filtered.forEach(t => {
-    const priCls = t.priority === 'Launched' ? 'pri-esc' : t.priority === 'Urgent' ? 'pri-urgent' : t.priority === 'High' ? 'pri-high' : t.priority === 'Medium' ? 'pri-med' : 'pri-low';
-    h += `<tr>`;
-    h += `<td>${t.svc}</td>`;
-    h += `<td class="hv">${t.owner || ''}</td>`;
-    h += `<td><span class="badge ${statusBadge(t.status)}">${t.status.replace('SEO Migration ', '')}</span></td>`;
-    h += `<td class="hv">${t.auH != null ? t.auH.toFixed(1) : ''}</td>`;
-    h += `<td class="${slaC(t.auSLA)}">${t.auSLA || ''}</td>`;
-    h += `<td class="hv">${t.rdH != null ? t.rdH.toFixed(1) : ''}</td>`;
-    h += `<td class="${slaC(t.rdSLA)}">${t.rdSLA || ''}</td>`;
-    h += `<td class="hv">${t.t14St || ''}</td>`;
-    h += `<td class="hv">${t.launch ? fmtDate(t.launch) : ''}</td>`;
-    h += `<td class="${priCls}">${t.priority === 'Launched' ? '🔴 Launched' : t.priority}</td>`;
-    h += `<td class="hv">${t.lastModBy || ''}</td>`;
-    h += `</tr>`;
-  });
-  h += `</tbody></table></div></div>`;
-
-  document.getElementById('svcTableWrap').innerHTML = h;
-}
-
-// ═══════════════════════════════════════
-// PHASE 2: WEBSITE LAUNCHED
-// ═══════════════════════════════════════
-function buildWebsiteLaunched(tracker) {
-  // Exclude these statuses entirely from the launched view
-  const excludeStatuses = ['Done', 'No Migration Needed', 'Cancelled', 'Awaiting Domain Information', 'Awaiting Domain Redirection', 'On hold', 'On Hold', 'Paused'];
-  const launched = tracker.filter(t => {
-    const isLaunched = t.t14St === 'Website Launched' || t.launch;
-    return isLaunched && !excludeStatuses.includes(t.status);
-  });
-
-  // Also find those in QAs + Launch (imminent)
-  const imminent = tracker.filter(t => {
-    return t.t14St === 'QAs + Launch' && !excludeStatuses.includes(t.status);
-  });
-
-  // Urgency scoring
-  function urgency(t) {
-    if (t.launch) {
-      const daysSince = (NOW - t.launch) / (24 * 36e5);
-      if (daysSince > 7) return { level: 'Critical', cls: 'esc-urgency-critical', days: daysSince };
-      if (daysSince > 2) return { level: 'High', cls: 'esc-urgency-high', days: daysSince };
-      return { level: 'Medium', cls: 'esc-urgency-medium', days: daysSince };
-    }
-    return { level: 'High', cls: 'esc-urgency-high', days: null };
-  }
-
-  launched.sort((a, b) => {
-    const ua = urgency(a), ub = urgency(b);
-    const order = { Critical: 0, High: 1, Medium: 2 };
-    const diff = (order[ua.level] ?? 3) - (order[ub.level] ?? 3);
-    if (diff !== 0) return diff;
-    // Within same urgency, most days since launch first
-    return (ub.days || 0) - (ua.days || 0);
-  });
-
-  let h = `<div class="kpi-grid">
-    <div class="kpi red"><div class="kpi-val">${launched.length}</div><div class="kpi-label">Launched &<br>Not Done</div></div>
-    <div class="kpi orange"><div class="kpi-val">${imminent.length}</div><div class="kpi-label">QAs + Launch<br>(Imminent)</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--text-dim)">${launched.filter(t => urgency(t).level === 'Critical').length}</div><div class="kpi-label">Critical<br>(7+ days)</div></div>
-  </div>`;
-
-  if (launched.length) {
-    h += `<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--red)"></span>Launched — Full Detail<span class="count">${launched.length}</span></span><button class="btn-sm" onclick="copyT('launchTable')">Copy</button></div><div class="tw"><table id="launchTable"><thead><tr><th>Service</th><th>Status</th><th>Owner</th><th>Urgency</th><th>Launch Date</th><th>Days Since</th><th>Audit SLA</th><th>Redir SLA</th><th>Last Modified By</th></tr></thead><tbody>`;
-    launched.forEach(t => {
-      const u = urgency(t);
-      h += `<tr><td>${t.svc}</td><td class="hv">${t.status}</td><td class="hv">${t.owner || ''}</td><td class="${u.cls}" style="padding:2px 8px;border-radius:3px">${u.level}</td><td class="hv">${t.launch ? fmtDate(t.launch) : '—'}</td><td class="hv" style="color:var(--red)">${u.days !== null ? Math.floor(u.days) + 'd' : '—'}</td><td class="${slaC(t.auSLA)}">${t.auSLA || '—'}</td><td class="${slaC(t.rdSLA)}">${t.rdSLA || '—'}</td><td class="hv">${t.lastModBy || ''}</td></tr>`;
-    });
-    h += `</tbody></table></div></div>`;
-  }
-
-  if (imminent.length) {
-    h += `<div class="section-hdr" style="color:var(--orange)">Imminent: QAs + Launch</div>`;
-    h += `<div class="ts"><div class="th"><span class="tt"><span class="dot" style="background:var(--orange)"></span>QAs + Launch — Approaching Launch<span class="count">${imminent.length}</span></span><button class="btn-sm" onclick="copyT('imminentTable')">Copy</button></div><div class="tw"><table id="imminentTable"><thead><tr><th>Service</th><th>Status</th><th>Owner</th><th>Audit SLA</th><th>Redir SLA</th><th>Last Modified By</th></tr></thead><tbody>`;
-    imminent.forEach(t => {
-      h += `<tr><td>${t.svc}</td><td class="hv">${t.status}</td><td class="hv">${t.owner || ''}</td><td class="${slaC(t.auSLA)}">${t.auSLA || '—'}</td><td class="${slaC(t.rdSLA)}">${t.rdSLA || '—'}</td><td class="hv">${t.lastModBy || ''}</td></tr>`;
-    });
-    h += `</tbody></table></div></div>`;
-  }
-
-  if (!launched.length && !imminent.length) {
-    h += `<div class="empty"><p>No escalations — all launched sites are Done</p></div>`;
-  }
-
-  document.getElementById('tab-launch').innerHTML = h;
-}
-
-// ═══════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════
-function slaC(s){return s==='Within SLA'?'sla-ok':s==='SLA Breach'?'sla-breach':s==='At Risk'?'sla-risk':s==='On Track'?'sla-track':''}
-function fmtDt(d){if(!d)return'';return`${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()} ${d.getHours()%12||12}:${String(d.getMinutes()).padStart(2,'0')} ${d.getHours()>=12?'PM':'AM'}`}
-function fmtDate(d){if(!d)return'';return`${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`}
-function switchTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('tab-'+id).classList.add('active')}
-function copyT(id){const t=document.getElementById(id);if(!t)return;const rows=t.querySelectorAll('tr');let tsv='';rows.forEach(r=>{const c=r.querySelectorAll('th,td');const v=[];c.forEach(x=>v.push(x.textContent.trim()));tsv+=v.join('\t')+'\n'});navigator.clipboard.writeText(tsv).then(()=>{const b=t.closest('.ts')?.querySelector('.btn-sm');if(b){b.textContent='Copied!';b.classList.add('copied');setTimeout(()=>{b.textContent='Copy';b.classList.remove('copied')},1500)}})}
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-
-// ═══════════════════════════════════════
-// SETTINGS
-// ═══════════════════════════════════════
-function toggleSettings(){const m=document.getElementById('settingsModal');m.classList.toggle('show');if(m.classList.contains('show'))renderSettings()}
-function renderSettings(){
-  let r='';settings.roster.forEach((n,i)=>{r+=`<div class="modal-row"><input value="${n}" onchange="settings.roster[${i}]=this.value"><button class="del" onclick="settings.roster.splice(${i},1);renderSettings()">×</button></div>`});
-  document.getElementById('rosterList').innerHTML=r;
-  let m='';Object.keys(settings.nameMap).forEach((k,i)=>{m+=`<div class="modal-row"><input value="${k}" placeholder="SF name" data-mk="${i}"><span style="color:var(--text-dim);padding:0 3px">→</span><input value="${settings.nameMap[k]}" placeholder="Standard" data-mv="${i}"><button class="del" onclick="delete settings.nameMap['${k.replace(/'/g,"\\'")}'];renderSettings()">×</button></div>`});
-  document.getElementById('mappingList').innerHTML=m;
-}
-function addRoster(){settings.roster.push('');renderSettings()}
-function addMapping(){settings.nameMap['']='';renderSettings()}
-function saveSettings(){
-  const nm={};document.querySelectorAll('[data-mk]').forEach(el=>{const k=el.value.trim();const v=document.querySelector(`[data-mv="${el.dataset.mk}"]`);if(k&&v)nm[k]=v.value.trim()});
-  settings.nameMap=nm;settings.roster=settings.roster.filter(n=>n.trim());
-  try{localStorage.setItem('seo_dash_v2',JSON.stringify(settings))}catch(e){}
-  toggleSettings();if(parsedRows.length){parseSLA();toast('Settings saved — re-run to apply')}else toast('Settings saved');
-}
-
-// ═══════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════
-initFirebase();
+window.addEventListener('resize',function(){if(ssSorted.length)drawBubbles()});
 </script>
 </body>
 </html>
