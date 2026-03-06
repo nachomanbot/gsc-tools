@@ -478,40 +478,53 @@ document.addEventListener('click',function(e){
 function onPropChange(){selectedSite=document.getElementById('propSearch').value}
 
 function resetState(){
+  console.log('[GSCIntel] Resetting state...');
   // Clear data
   siteTimeline=[];sitePages=[];siteQueries=[];pageUrls=[];pageClickMap={};
   ssSections={};ssSorted=[];bubbles=[];compResults=[];refreshDates=[];
 
   // Destroy chart
-  if(chartInst){chartInst.destroy();chartInst=null}
+  if(chartInst){try{chartInst.destroy()}catch(e){}chartInst=null}
 
   // Hide results sections
-  document.getElementById('refreshResults').classList.add('hidden');
-  document.getElementById('detailPanel').classList.add('hidden');
-  document.getElementById('detailKw').classList.add('hidden');
+  var hideIds=['refreshResults','detailPanel','detailKw','dataStatus'];
+  for(var i=0;i<hideIds.length;i++){
+    var el=document.getElementById(hideIds[i]);
+    if(el)el.classList.add('hidden');
+  }
 
   // Clear content refresh UI
-  document.getElementById('compCards').innerHTML='';
-  document.getElementById('chartLegend').innerHTML='';
+  var clearIds=['compCards','chartLegend','detailPages','kwContainer','bubbleStats'];
+  for(var i=0;i<clearIds.length;i++){
+    var el=document.getElementById(clearIds[i]);
+    if(el)el.innerHTML='';
+  }
 
-  // Clear site structure UI
-  document.getElementById('detailPages').innerHTML='';
-  document.getElementById('kwContainer').innerHTML='';
-  document.getElementById('bubbleStats').innerHTML='';
-  var bCanvas=document.getElementById('bubbleCanvas');
-  var bCtx=bCanvas.getContext('2d');
-  var dpr=window.devicePixelRatio||1;
-  var rect=bCanvas.getBoundingClientRect();
-  if(rect.width>0){bCanvas.width=rect.width*dpr;bCanvas.height=rect.height*dpr;bCtx.scale(dpr,dpr);bCtx.clearRect(0,0,rect.width,rect.height)}
+  // Clear bubble canvas
+  try{
+    var bCanvas=document.getElementById('bubbleCanvas');
+    var bCtx=bCanvas.getContext('2d');
+    var dpr=window.devicePixelRatio||1;
+    var rect=bCanvas.getBoundingClientRect();
+    if(rect.width>0){bCanvas.width=rect.width*dpr;bCanvas.height=rect.height*dpr;bCtx.scale(dpr,dpr);bCtx.clearRect(0,0,rect.width,rect.height)}
+  }catch(e){}
 
-  // Reset refresh log entries
+  // Reset refresh log - clear all items then add one fresh row
   var list=document.getElementById('refreshDates');
-  list.innerHTML='<div class="refresh-date-item"><div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search pages..." oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite, Added FAQ"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div></div>';
+  if(list){
+    // Remove all children
+    while(list.firstChild)list.removeChild(list.firstChild);
+    // Add one blank row
+    addRow();
+    // Clear the new row's inputs (addRow starts blank but just to be safe)
+    var inputs=list.querySelectorAll('input');
+    for(var i=0;i<inputs.length;i++){
+      inputs[i].value='';
+      inputs[i].classList.remove('has-value');
+    }
+  }
 
-  // Clear status
-  document.getElementById('dataStatus').classList.add('hidden');
-
-  console.log('[GSCIntel] State reset for new property');
+  console.log('[GSCIntel] State reset complete');
 }
 
 async function loadData(){
