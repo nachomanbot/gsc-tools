@@ -51,6 +51,11 @@ main{padding:40px 0 80px}
 .prop-bar label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
 .prop-select{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;color:var(--text);background:var(--surface2);outline:none;cursor:pointer;min-width:200px}
 .prop-select:focus{border-color:var(--gold)}
+.prop-search-wrap{position:relative;flex:1;min-width:200px}
+.prop-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;max-height:240px;overflow-y:auto;z-index:100;box-shadow:var(--shadow)}
+.prop-dropdown .prop-opt{padding:10px 14px;font-size:13px;font-family:'DM Mono',monospace;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.prop-dropdown .prop-opt:hover{background:var(--gold-dim);color:var(--text)}
+.prop-dropdown .prop-opt.selected{background:var(--gold-dim);color:var(--gold);font-weight:600}
 .date-range-bar{display:flex;align-items:center;gap:8px}
 .date-range-bar input{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface2);outline:none}
 .date-range-bar input:focus{border-color:var(--gold)}
@@ -232,7 +237,10 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1
     <!-- PROPERTY + DATE BAR -->
     <div class="prop-bar">
       <label>Property</label>
-      <select id="propSelect" class="prop-select" onchange="onPropChange()"></select>
+      <div class="prop-search-wrap">
+        <input type="text" id="propSearch" class="prop-select" placeholder="Search properties..." autocomplete="off" oninput="filterProps()" onfocus="showPropDD(true)">
+        <div id="propDropdown" class="prop-dropdown hidden"></div>
+      </div>
       <div class="date-range-bar">
         <input type="date" id="dateFrom">
         <span style="color:var(--text3);font-size:12px">to</span>
@@ -269,8 +277,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1
           </div>
           <button class="add-date-btn" onclick="addRow()">+ Add another entry</button>
           <div style="display:flex;gap:12px;margin-top:20px">
-            <div style="flex:1"><label class="form-label">Primary Metric</label><select id="primaryMetric" class="form-input"><option value="clicks">Clicks</option><option value="impressions">Impressions</option><option value="ctr">CTR</option></select></div>
-            <div style="flex:1"><label class="form-label">Comparison Window</label><select id="windowDays" class="form-input"><option value="14">14 days</option><option value="30" selected>30 days</option><option value="60">60 days</option></select></div>
+            <div style="flex:1"><label class="form-label">Primary Metric</label><select id="primaryMetric" class="form-input" onchange="onMetricChange()"><option value="clicks">Clicks</option><option value="impressions">Impressions</option><option value="ctr">CTR</option></select></div>
+            <div style="flex:1"><label class="form-label">Comparison Window</label><select id="windowDays" class="form-input" onchange="onMetricChange()"><option value="14">14 days</option><option value="30" selected>30 days</option><option value="60">60 days</option></select></div>
           </div>
           <button class="btn-primary" onclick="analyzeRefresh()" style="margin-top:16px">Analyze Correlations</button>
         </div>
@@ -413,9 +421,9 @@ function fetchSites(){
     siteList=(data.siteEntry||[]).filter(function(s){return s.permissionLevel!=='siteUnverifiedUser'});
     if(!siteList.length){hideLoading();showStatus('error','No GSC properties found for this account.');return}
 
-    var sel=document.getElementById('propSelect');sel.innerHTML='';
-    siteList.forEach(function(s){var o=document.createElement('option');o.value=s.siteUrl;o.textContent=s.siteUrl;sel.appendChild(o)});
+    // Auto-select first and show in input
     selectedSite=siteList[0].siteUrl;
+    document.getElementById('propSearch').value=selectedSite;
 
     // Default date range: last 3 months
     var now=new Date();
@@ -427,10 +435,92 @@ function fetchSites(){
   }).catch(function(e){hideLoading();showStatus('error','Failed to fetch sites: '+e.message)});
 }
 
-function onPropChange(){selectedSite=document.getElementById('propSelect').value}
+function filterProps(){
+  var q=document.getElementById('propSearch').value.toLowerCase();
+  var dd=document.getElementById('propDropdown');
+  var matches=siteList.filter(function(s){return s.siteUrl.toLowerCase().indexOf(q)>=0});
+  if(!matches.length){dd.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--text3);font-style:italic">No properties match</div>'}
+  else{
+    var html='';
+    for(var i=0;i<matches.length;i++){
+      var isSel=matches[i].siteUrl===selectedSite?' selected':'';
+      html+='<div class="prop-opt'+isSel+'" data-site="'+escHtml(matches[i].siteUrl)+'">'+escHtml(matches[i].siteUrl)+'</div>';
+    }
+    dd.innerHTML=html;
+  }
+  showPropDD(true);
+}
+
+function showPropDD(show){
+  var dd=document.getElementById('propDropdown');
+  if(show&&siteList.length){
+    if(!dd.innerHTML)filterProps();
+    dd.classList.remove('hidden');
+  }else{
+    setTimeout(function(){dd.classList.add('hidden')},200);
+  }
+}
+
+// Delegate property dropdown clicks
+document.addEventListener('click',function(e){
+  var opt=e.target.closest('.prop-opt');
+  if(opt){
+    selectedSite=opt.getAttribute('data-site');
+    document.getElementById('propSearch').value=selectedSite;
+    document.getElementById('propDropdown').classList.add('hidden');
+    return;
+  }
+  if(!e.target.closest('.prop-search-wrap')){
+    document.getElementById('propDropdown').classList.add('hidden');
+  }
+});
+
+function onPropChange(){selectedSite=document.getElementById('propSearch').value}
+
+function resetState(){
+  // Clear data
+  siteTimeline=[];sitePages=[];siteQueries=[];pageUrls=[];pageClickMap={};
+  ssSections={};ssSorted=[];bubbles=[];compResults=[];refreshDates=[];
+
+  // Destroy chart
+  if(chartInst){chartInst.destroy();chartInst=null}
+
+  // Hide results sections
+  document.getElementById('refreshResults').classList.add('hidden');
+  document.getElementById('detailPanel').classList.add('hidden');
+  document.getElementById('detailKw').classList.add('hidden');
+
+  // Clear content refresh UI
+  document.getElementById('compCards').innerHTML='';
+  document.getElementById('chartLegend').innerHTML='';
+
+  // Clear site structure UI
+  document.getElementById('detailPages').innerHTML='';
+  document.getElementById('kwContainer').innerHTML='';
+  document.getElementById('bubbleStats').innerHTML='';
+  var bCanvas=document.getElementById('bubbleCanvas');
+  var bCtx=bCanvas.getContext('2d');
+  var dpr=window.devicePixelRatio||1;
+  var rect=bCanvas.getBoundingClientRect();
+  if(rect.width>0){bCanvas.width=rect.width*dpr;bCanvas.height=rect.height*dpr;bCtx.scale(dpr,dpr);bCtx.clearRect(0,0,rect.width,rect.height)}
+
+  // Reset refresh log entries
+  var list=document.getElementById('refreshDates');
+  list.innerHTML='<div class="refresh-date-item"><div class="rdi-row"><div class="rdi-field rdi-date"><label class="rdi-label">Date</label><input type="date" class="date-input"></div><div class="rdi-field rdi-page"><label class="rdi-label">Page</label><div class="rdi-page-wrap"><input type="text" class="page-input" placeholder="Type to search pages..." oninput="filterRP(this)" onfocus="showRPDD(this,true)"><div class="rdi-dropdown hidden"></div></div></div><div class="rdi-field rdi-note"><label class="rdi-label">What Changed</label><input type="text" class="note-input" placeholder="e.g. Full rewrite, Added FAQ"></div><button class="remove-btn" onclick="removeRow(this)">&times;</button></div></div>';
+
+  // Clear status
+  document.getElementById('dataStatus').classList.add('hidden');
+
+  console.log('[GSCIntel] State reset for new property');
+}
 
 async function loadData(){
-  if(!selectedSite||!accessToken)return;
+  // Read from search input in case user typed directly
+  selectedSite=document.getElementById('propSearch').value.trim();
+  if(!selectedSite||!accessToken){showStatus('error','Please select a property and sign in.');return}
+
+  // Reset everything from previous client
+  resetState();
   var from=document.getElementById('dateFrom').value;
   var to=document.getElementById('dateTo').value;
   if(!from||!to){showStatus('error','Please select a date range.');return}
@@ -551,10 +641,29 @@ document.addEventListener('click',function(e){var opt=e.target.closest('.rdi-opt
 function analyzeRefresh(){
   refreshDates=getRefreshEntries();
   if(!siteTimeline.length){showStatus('error','Please load GSC data first.');return}
+  console.log('[GSCIntel] analyzeRefresh: metric='+document.getElementById('primaryMetric').value);
+  console.log('[GSCIntel] Sample data point:',JSON.stringify(siteTimeline[0]));
   buildChart(siteTimeline,refreshDates,'Site-wide');
   if(refreshDates.length)buildComps(siteTimeline,refreshDates);
   document.getElementById('refreshResults').classList.remove('hidden');
   document.getElementById('refreshResults').scrollIntoView({behavior:'smooth'});
+}
+
+/* Auto-update chart when metric or window changes */
+function onMetricChange(){
+  if(!document.getElementById('refreshResults').classList.contains('hidden')&&siteTimeline.length){
+    // Re-render chart with new metric
+    var currentLabel=document.getElementById('chartLabel').textContent;
+    // Check if we're showing a drilled-down page or site-wide
+    if(currentLabel&&currentLabel!=='Site-wide'&&currentLabel.indexOf('Loading')<0){
+      // We're showing a page drill-down - need to re-fetch... just use cached data if available
+      // For now, rebuild with site-wide data
+      buildChart(siteTimeline,refreshDates,'Site-wide');
+    }else{
+      buildChart(siteTimeline,refreshDates,'Site-wide');
+    }
+    if(refreshDates.length)buildComps(siteTimeline,refreshDates);
+  }
 }
 
 function buildChart(data,ref,label){
@@ -768,17 +877,19 @@ function renderKwClusters(queries){
   for(var i=0;i<multi.length&&fin.length<12;i++){fin.push(multi[i]);for(var j=0;j<multi[i].qs.length;j++)used[multi[i].qs[j].query]=1}
   for(var i=0;i<single.length&&fin.length<16;i++){var has=false;for(var j=0;j<single[i].qs.length;j++){if(!used[single[i].qs[j].query]){has=true;break}}if(has)fin.push(single[i])}
 
+  var kwHeader='<div class="kw-row" style="border-bottom:1px solid var(--border2);padding:6px 16px"><div class="kw-name" style="font-weight:600;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;font-family:\'DM Sans\',sans-serif">Query</div><div class="kw-val" style="font-weight:600;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em">Clicks</div><div class="kw-val" style="font-weight:600;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em">Impr</div><div class="kw-val" style="font-weight:600;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em">Pos</div></div>';
+
   var html='';
   if(!fin.length&&queries.length){
     // Show flat list if no clusters
-    html='<div style="max-height:300px;overflow-y:auto">';
+    html='<div style="max-height:300px;overflow-y:auto">'+kwHeader;
     var sorted=queries.slice().sort(function(a,b){return b.clicks-a.clicks});
     for(var i=0;i<Math.min(sorted.length,30);i++){html+='<div class="kw-row"><div class="kw-name">'+escHtml(sorted[i].query)+'</div><div class="kw-val">'+fmtNum(sorted[i].clicks)+'</div><div class="kw-val">'+fmtNum(sorted[i].impressions)+'</div><div class="kw-val">'+sorted[i].position.toFixed(1)+'</div></div>'}
     html+='</div>';
   }
   for(var i=0;i<fin.length;i++){
     var c=fin[i];var sq=c.qs.slice().sort(function(a,b){return b.clicks-a.clicks});
-    html+='<div class="kw-cluster"><div class="kw-cluster-header" onclick="this.nextElementSibling.classList.toggle(\'open\')"><div class="kw-cluster-name">'+escHtml(c.name)+' <span class="kw-tag">'+c.qs.length+'</span></div><div class="kw-cluster-stats"><span>'+fmtNum(c.clicks)+'</span> clicks</div></div><div class="kw-cluster-body">';
+    html+='<div class="kw-cluster"><div class="kw-cluster-header" onclick="this.nextElementSibling.classList.toggle(\'open\')"><div class="kw-cluster-name">'+escHtml(c.name)+' <span class="kw-tag">'+c.qs.length+'</span></div><div class="kw-cluster-stats"><span>'+fmtNum(c.clicks)+'</span> clicks &middot; <span>'+fmtNum(c.impr)+'</span> impr</div></div><div class="kw-cluster-body">'+kwHeader;
     for(var j=0;j<Math.min(sq.length,8);j++)html+='<div class="kw-row"><div class="kw-name">'+escHtml(sq[j].query)+'</div><div class="kw-val">'+fmtNum(sq[j].clicks)+'</div><div class="kw-val">'+fmtNum(sq[j].impressions)+'</div><div class="kw-val">'+sq[j].position.toFixed(1)+'</div></div>';
     if(sq.length>8)html+='<div class="kw-row" style="color:var(--text3);font-style:italic;justify-content:center">+'+(sq.length-8)+' more</div>';
     html+='</div></div>';
