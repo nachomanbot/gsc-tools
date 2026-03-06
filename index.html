@@ -479,50 +479,56 @@ function onPropChange(){selectedSite=document.getElementById('propSearch').value
 
 function resetState(){
   console.log('[GSCIntel] Resetting state...');
-  // Clear data
+  
   siteTimeline=[];sitePages=[];siteQueries=[];pageUrls=[];pageClickMap={};
   ssSections={};ssSorted=[];bubbles=[];compResults=[];refreshDates=[];
 
-  // Destroy chart
-  if(chartInst){try{chartInst.destroy()}catch(e){}chartInst=null}
+  try{if(chartInst){chartInst.destroy()}}catch(e){}
+  chartInst=null;
 
-  // Hide results sections
-  var hideIds=['refreshResults','detailPanel','detailKw','dataStatus'];
-  for(var i=0;i<hideIds.length;i++){
-    var el=document.getElementById(hideIds[i]);
-    if(el)el.classList.add('hidden');
-  }
+  try{document.getElementById('refreshResults').classList.add('hidden')}catch(e){}
+  try{document.getElementById('detailPanel').classList.add('hidden')}catch(e){}
+  try{document.getElementById('detailKw').classList.add('hidden')}catch(e){}
+  try{document.getElementById('dataStatus').classList.add('hidden')}catch(e){}
+  try{document.getElementById('compCards').innerHTML=''}catch(e){}
+  try{document.getElementById('chartLegend').innerHTML=''}catch(e){}
+  try{document.getElementById('detailPages').innerHTML=''}catch(e){}
+  try{document.getElementById('kwContainer').innerHTML=''}catch(e){}
+  try{document.getElementById('bubbleStats').innerHTML=''}catch(e){}
 
-  // Clear content refresh UI
-  var clearIds=['compCards','chartLegend','detailPages','kwContainer','bubbleStats'];
-  for(var i=0;i<clearIds.length;i++){
-    var el=document.getElementById(clearIds[i]);
-    if(el)el.innerHTML='';
-  }
-
-  // Clear bubble canvas
   try{
-    var bCanvas=document.getElementById('bubbleCanvas');
-    var bCtx=bCanvas.getContext('2d');
-    var dpr=window.devicePixelRatio||1;
-    var rect=bCanvas.getBoundingClientRect();
-    if(rect.width>0){bCanvas.width=rect.width*dpr;bCanvas.height=rect.height*dpr;bCtx.scale(dpr,dpr);bCtx.clearRect(0,0,rect.width,rect.height)}
+    var bc=document.getElementById('bubbleCanvas');
+    if(bc){bc.getContext('2d').clearRect(0,0,bc.width,bc.height)}
   }catch(e){}
 
-  // Reset refresh log - clear all items then add one fresh row
-  var list=document.getElementById('refreshDates');
-  if(list){
-    // Remove all children
-    while(list.firstChild)list.removeChild(list.firstChild);
-    // Add one blank row
-    addRow();
-    // Clear the new row's inputs (addRow starts blank but just to be safe)
-    var inputs=list.querySelectorAll('input');
-    for(var i=0;i<inputs.length;i++){
-      inputs[i].value='';
-      inputs[i].classList.remove('has-value');
+  // CLEAR REFRESH LOG — direct input targeting
+  try{
+    console.log('[GSCIntel] Clearing refresh log...');
+    var container=document.getElementById('refreshDates');
+    if(container){
+      // Get all inputs BEFORE removing anything
+      var dateInputs=container.getElementsByClassName('date-input');
+      var pageInputs=container.getElementsByClassName('page-input');
+      var noteInputs=container.getElementsByClassName('note-input');
+      
+      console.log('[GSCIntel] Found inputs: dates='+dateInputs.length+' pages='+pageInputs.length+' notes='+noteInputs.length);
+      
+      // Clear all date inputs
+      for(var i=0;i<dateInputs.length;i++){dateInputs[i].value=''}
+      // Clear all page inputs
+      for(var i=0;i<pageInputs.length;i++){pageInputs[i].value='';pageInputs[i].className='page-input'}
+      // Clear all note inputs
+      for(var i=0;i<noteInputs.length;i++){noteInputs[i].value=''}
+      
+      // Remove extra rows (keep first only)
+      var rows=container.getElementsByClassName('refresh-date-item');
+      while(rows.length>1){
+        container.removeChild(rows[rows.length-1]);
+      }
+      
+      console.log('[GSCIntel] Refresh log cleared, remaining rows: '+rows.length);
     }
-  }
+  }catch(e){console.error('[GSCIntel] Refresh log clear error:',e)}
 
   console.log('[GSCIntel] State reset complete');
 }
